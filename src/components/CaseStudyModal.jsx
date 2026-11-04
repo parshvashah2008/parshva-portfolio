@@ -38,33 +38,34 @@ export default function CaseStudyModal({ project, onClose, onSelectNext }) {
       >
         {/* Top sticky editorial bar */}
         <header className="sticky top-0 z-[100] w-full border-b border-white/15 bg-[#040705]/95 backdrop-blur-xl shadow-2xl">
-          <div className="shell flex items-center justify-between h-16 sm:h-18">
-            <div className="flex items-center gap-2 sm:gap-3">
+          <div className="shell flex items-center justify-between gap-2 h-16 sm:h-18">
+            <div className="flex items-center gap-2 min-w-0">
               <span
-                className="font-mono text-xs px-2.5 py-1 rounded font-bold tracking-wider"
+                className="font-mono text-[11px] sm:text-xs px-2 py-0.5 sm:px-2.5 sm:py-1 rounded font-bold tracking-wider shrink-0"
                 style={{ backgroundColor: `${project.color}25`, color: project.color }}
               >
                 PROJ {project.num}
               </span>
               <span className="text-white/40 text-xs hidden sm:inline">/</span>
-              <span className="font-mono text-xs text-white/70 uppercase tracking-wider hidden sm:inline">
+              <span className="font-mono text-xs text-white/70 uppercase tracking-wider hidden md:inline">
                 {project.category}
               </span>
-              <span className="text-white/30 text-xs hidden md:inline">—</span>
-              <span className="font-display font-semibold text-sm sm:text-base text-white truncate max-w-[160px] sm:max-w-xs md:max-w-none">
+              <span className="text-white/30 text-xs hidden sm:inline">—</span>
+              <span className="font-display font-semibold text-xs sm:text-sm md:text-base text-white truncate">
                 {project.title}
               </span>
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
               {project.link && project.link.startsWith('http') && (
                 <a
                   href={project.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs font-mono font-semibold bg-[#c8f53c] text-black hover:bg-[#d8ff54] transition-all shadow-[0_4px_16px_rgba(200,245,60,0.3)] cursor-pointer"
+                  className="inline-flex items-center gap-1 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-mono font-semibold bg-[#c8f53c] text-black hover:bg-[#d8ff54] transition-all shadow-[0_4px_16px_rgba(200,245,60,0.3)] cursor-pointer shrink-0"
                 >
-                  <span>{project.linkLabel || 'Open Application'}</span>
+                  <span className="hidden xs:inline sm:inline">{project.linkLabel || 'Live Demo'}</span>
+                  <span className="xs:hidden sm:hidden">Live</span>
                   <span className="text-xs">↗</span>
                 </a>
               )}
@@ -73,7 +74,7 @@ export default function CaseStudyModal({ project, onClose, onSelectNext }) {
                   href={project.github}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-mono border border-white/20 bg-white/10 hover:bg-white/20 transition-all text-white cursor-pointer"
+                  className="hidden md:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-mono border border-white/20 bg-white/10 hover:bg-white/20 transition-all text-white cursor-pointer shrink-0"
                 >
                   <span>GitHub</span>
                   <span className="text-xs">↗</span>
@@ -83,10 +84,10 @@ export default function CaseStudyModal({ project, onClose, onSelectNext }) {
                 type="button"
                 onClick={onClose}
                 aria-label="Close Case Study"
-                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-mono bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white border border-white/20 cursor-pointer shadow"
+                className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs font-mono bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white border border-white/20 cursor-pointer shadow shrink-0"
               >
                 <span>Close</span>
-                <span className="text-base leading-none font-bold">✕</span>
+                <span className="text-sm sm:text-base leading-none font-bold">✕</span>
               </button>
             </div>
           </div>

@@ -67,18 +67,18 @@ function ProjectSpatialNode({
           distance={3.5}
         />
 
-        {/* Interactive 3D Spatial Card */}
-        <Html
-          center
-          distanceFactor={7.8}
-          position={[0, 0, 0]}
-          style={{
-            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-            opacity: modalOpen ? 0 : filterMatch ? 1 : 0.25,
-            pointerEvents: modalOpen ? 'none' : filterMatch ? 'auto' : 'none',
-            display: modalOpen ? 'none' : 'block',
-          }}
-        >
+        {/* Interactive 3D Spatial Card (completely unmounted while modal is open) */}
+        {!modalOpen && (
+          <Html
+            center
+            distanceFactor={7.8}
+            position={[0, 0, 0]}
+            style={{
+              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+              opacity: filterMatch ? 1 : 0.25,
+              pointerEvents: filterMatch ? 'auto' : 'none',
+            }}
+          >
           <div
             onClick={(e) => {
               e.stopPropagation()
@@ -210,6 +210,7 @@ function ProjectSpatialNode({
             </div>
           </div>
         </Html>
+        )}
       </group>
     </Float>
   )
