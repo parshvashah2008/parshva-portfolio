@@ -16,6 +16,7 @@ function ProjectSpatialNode({
   onSelect,
   reduced,
   filterMatch,
+  modalOpen = false,
 }) {
   const meshRef = useRef(null)
   const isSelected = active?.id === project.id
@@ -72,9 +73,10 @@ function ProjectSpatialNode({
           distanceFactor={7.8}
           position={[0, 0, 0]}
           style={{
-            transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-            opacity: filterMatch ? 1 : 0.25,
-            pointerEvents: filterMatch ? 'auto' : 'none',
+            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+            opacity: modalOpen ? 0 : filterMatch ? 1 : 0.25,
+            pointerEvents: modalOpen ? 'none' : filterMatch ? 'auto' : 'none',
+            display: modalOpen ? 'none' : 'block',
           }}
         >
           <div
@@ -159,21 +161,51 @@ function ProjectSpatialNode({
                 )}
               </div>
 
-              {/* Click to open badge */}
-              <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-white/60 font-mono">
-                <span className="flex items-center gap-1 text-[9px] text-white/40">
-                  <span
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ backgroundColor: project.color }}
-                  />
-                  {project.status.split(' ')[0]}
-                </span>
-                <span
-                  className="font-semibold transition-colors duration-200"
-                  style={{ color: isHovered || isSelected ? project.color : 'inherit' }}
+              {/* Direct Clickable Action Row on Card */}
+              <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between gap-1.5 font-mono text-[10px]">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onSelect(project)
+                  }}
+                  className="px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+                  style={{
+                    backgroundColor: isHovered || isSelected ? project.color : 'rgba(255,255,255,0.12)',
+                    color: isHovered || isSelected ? '#000' : '#fff',
+                  }}
                 >
-                  Explore Case Study →
-                </span>
+                  Case Study →
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {project.link && project.link.startsWith('http') && (
+                    <a
+                      href={project.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="px-2 py-1 rounded-md border border-white/20 bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer flex items-center gap-1 text-[9px] font-semibold"
+                      title={`Launch ${project.title}`}
+                    >
+                      <span>Live</span>
+                      <span>↗</span>
+                    </a>
+                  )}
+
+                  {project.github && (
+                    <a
+                      href={project.github}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="px-2 py-1 rounded-md border border-white/15 bg-white/5 hover:bg-white/15 text-white/70 hover:text-white transition-all cursor-pointer text-[9px]"
+                      title="GitHub Repository"
+                    >
+                      GH ↗
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -259,6 +291,7 @@ export default function ProjectUniverseScene({
   onSelectProject,
   activeFilter = 'All',
   reduced = false,
+  modalOpen = false,
 }) {
   const controlsRef = useRef(null)
 
@@ -328,6 +361,7 @@ export default function ProjectUniverseScene({
               onSelect={onSelectProject}
               reduced={reduced}
               filterMatch={match}
+              modalOpen={modalOpen}
             />
           )
         })}

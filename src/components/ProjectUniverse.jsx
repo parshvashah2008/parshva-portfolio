@@ -126,17 +126,18 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
             }}
             activeFilter={activeFilter}
             reduced={reduced}
+            modalOpen={Boolean(activeCaseStudy)}
           />
 
           {/* Top Control Hint */}
           <div className="pointer-events-none absolute top-4 inset-x-0 flex justify-center z-10">
             <div className="px-3.5 py-1.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-md font-mono text-[11px] text-white/60">
-              Drag to orbit · Scroll to zoom · Click any node to open Case Study
+              Drag to orbit · Scroll to zoom · Click any node or button to explore
             </div>
           </div>
 
           {/* Bottom Project Preview Dock (Vadim Carazan HUD) */}
-          {currentDisplayProject && (
+          {currentDisplayProject && !activeCaseStudy && (
             <div className="absolute bottom-4 inset-x-0 z-20 pointer-events-none">
               <div className="shell flex justify-center">
                 <div className="pointer-events-auto w-full max-w-2xl p-4 sm:p-5 rounded-2xl bg-[#090e0c]/90 border border-white/15 backdrop-blur-xl shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -170,25 +171,37 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
                     <div className="flex items-center gap-1 font-mono text-xs">
                       <button
                         onClick={() => cycleProject(-1)}
-                        className="w-8 h-8 rounded-full border border-white/10 bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/80 transition-colors"
+                        className="w-8 h-8 rounded-full border border-white/10 bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/80 transition-colors cursor-pointer"
                         title="Previous project"
                       >
                         ←
                       </button>
                       <button
                         onClick={() => cycleProject(1)}
-                        className="w-8 h-8 rounded-full border border-white/10 bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/80 transition-colors"
+                        className="w-8 h-8 rounded-full border border-white/10 bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/80 transition-colors cursor-pointer"
                         title="Next project"
                       >
                         →
                       </button>
                     </div>
 
+                    {currentDisplayProject.link && currentDisplayProject.link.startsWith('http') && (
+                      <a
+                        href={currentDisplayProject.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3.5 py-2 rounded-full font-mono text-xs font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-all flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Live</span>
+                        <span>↗</span>
+                      </a>
+                    )}
+
                     <button
                       onClick={() => setActiveCaseStudy(currentDisplayProject)}
-                      className="px-4 py-2 rounded-full font-mono text-xs font-semibold bg-[#c8f53c] text-black hover:bg-[#d8ff54] transition-all shadow-md flex items-center gap-1.5"
+                      className="px-4 py-2 rounded-full font-mono text-xs font-semibold bg-[#c8f53c] text-black hover:bg-[#d8ff54] transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
                     >
-                      <span>Read Case Study</span>
+                      <span>Case Study</span>
                       <span>→</span>
                     </button>
                   </div>

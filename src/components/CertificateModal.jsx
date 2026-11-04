@@ -26,7 +26,7 @@ export default function CertificateModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[150] flex items-center justify-center p-3 sm:p-6">
+      <div className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-6">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}

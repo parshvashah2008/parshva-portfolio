@@ -32,17 +32,17 @@ export default function CaseStudyModal({ project, onClose, onSelectNext }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.3 }}
-        className="fixed inset-0 z-50 overflow-y-auto bg-[#030504]/96 backdrop-blur-2xl text-white"
+        transition={{ duration: 0.25 }}
+        className="fixed inset-0 z-[999999] overflow-y-auto bg-[#030504]/98 backdrop-blur-3xl text-white selection:bg-[#c8f53c] selection:text-black"
         ref={scrollRef}
       >
         {/* Top sticky editorial bar */}
-        <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#040705]/85 backdrop-blur-md">
-          <div className="shell flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-[100] w-full border-b border-white/15 bg-[#040705]/95 backdrop-blur-xl shadow-2xl">
+          <div className="shell flex items-center justify-between h-16 sm:h-18">
+            <div className="flex items-center gap-2 sm:gap-3">
               <span
-                className="font-mono text-xs px-2 py-0.5 rounded font-bold"
-                style={{ backgroundColor: `${project.color}20`, color: project.color }}
+                className="font-mono text-xs px-2.5 py-1 rounded font-bold tracking-wider"
+                style={{ backgroundColor: `${project.color}25`, color: project.color }}
               >
                 PROJ {project.num}
               </span>
@@ -51,20 +51,20 @@ export default function CaseStudyModal({ project, onClose, onSelectNext }) {
                 {project.category}
               </span>
               <span className="text-white/30 text-xs hidden md:inline">—</span>
-              <span className="font-display font-semibold text-sm text-white/90 truncate max-w-[240px] md:max-w-none">
+              <span className="font-display font-semibold text-sm sm:text-base text-white truncate max-w-[160px] sm:max-w-xs md:max-w-none">
                 {project.title}
               </span>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               {project.link && project.link.startsWith('http') && (
                 <a
                   href={project.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono border border-white/20 bg-white/5 hover:bg-white/10 transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-full text-xs font-mono font-semibold bg-[#c8f53c] text-black hover:bg-[#d8ff54] transition-all shadow-[0_4px_16px_rgba(200,245,60,0.3)] cursor-pointer"
                 >
-                  <span>{project.linkLabel || 'Live Demo'}</span>
+                  <span>{project.linkLabel || 'Open Application'}</span>
                   <span className="text-xs">↗</span>
                 </a>
               )}
@@ -73,30 +73,31 @@ export default function CaseStudyModal({ project, onClose, onSelectNext }) {
                   href={project.github}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-white/80"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-mono border border-white/20 bg-white/10 hover:bg-white/20 transition-all text-white cursor-pointer"
                 >
                   <span>GitHub</span>
                   <span className="text-xs">↗</span>
                 </a>
               )}
               <button
+                type="button"
                 onClick={onClose}
                 aria-label="Close Case Study"
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-mono bg-white/10 hover:bg-white/20 transition-all text-white border border-white/15"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-mono bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white border border-white/20 cursor-pointer shadow"
               >
                 <span>Close</span>
-                <span className="text-sm leading-none">✕</span>
+                <span className="text-base leading-none font-bold">✕</span>
               </button>
             </div>
           </div>
         </header>
 
         {/* Case Study Content */}
-        <main className="shell py-12 md:py-20 max-w-4xl mx-auto space-y-16">
+        <main className="shell py-10 md:py-16 max-w-4xl mx-auto space-y-14 relative z-10">
           {/* 01. Project Intro & Headlines */}
           <section className="space-y-6">
             <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-white/60">
-              <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
                 {project.status}
               </span>
               <span>·</span>
@@ -105,14 +106,40 @@ export default function CaseStudyModal({ project, onClose, onSelectNext }) {
               <span>Verified Production Build</span>
             </div>
 
-            <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-normal leading-[1.05] tracking-tight text-[#f5f5f3]">
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-normal leading-[1.04] tracking-tight text-[#f5f5f3]">
               {project.title}
             </h1>
             <p className="font-serif italic text-xl sm:text-2xl text-white/70 max-w-2xl leading-relaxed">
               {project.subtitle}
             </p>
 
-            <p className="text-base sm:text-lg text-white/80 font-sans leading-relaxed pt-2 border-t border-white/10">
+            {/* Direct Quick Launch Action Dock */}
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              {project.link && project.link.startsWith('http') && (
+                <a
+                  href={project.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 rounded-full text-xs font-mono font-semibold bg-[#c8f53c] text-black hover:bg-[#d8ff54] transition-all shadow-[0_10px_25px_rgba(200,245,60,0.3)] flex items-center gap-2 cursor-pointer"
+                >
+                  <span>🚀 {project.linkLabel || 'Launch Live Application'}</span>
+                  <span>↗</span>
+                </a>
+              )}
+              {project.github && (
+                <a
+                  href={project.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-3 rounded-full text-xs font-mono border border-white/20 bg-white/10 hover:bg-white/20 transition-all text-white flex items-center gap-2 cursor-pointer"
+                >
+                  <span>📦 View Source on GitHub</span>
+                  <span>↗</span>
+                </a>
+              )}
+            </div>
+
+            <p className="text-base sm:text-lg text-white/80 font-sans leading-relaxed pt-4 border-t border-white/10">
               {s.intro}
             </p>
           </section>
