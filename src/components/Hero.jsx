@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import PortraitMatrix from './PortraitMatrix'
+import EditorialPortraitHero from './EditorialPortraitHero'
 import MagneticButton from './MagneticButton'
 import { projects } from '../data/projects'
 import { forageCertifications, anthropicCertifications } from '../data/certifications'
@@ -30,33 +30,42 @@ export default function Hero({ reduced = false }) {
       className="relative min-h-[100svh] flex flex-col justify-between pt-24 pb-12 overflow-hidden bg-[#040504]"
     >
       {/* Ambient background glows */}
-      <div className="absolute top-10 left-1/3 w-[36vw] h-[36vw] bg-[#c8f53c]/[0.02] rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute top-1/2 right-10 w-[32vw] h-[32vw] bg-[#1a3828]/[0.25] rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-10 left-1/4 w-[42vw] h-[42vw] bg-[#c8f53c]/[0.025] rounded-full blur-[160px] pointer-events-none" />
+      <div className="absolute top-1/2 right-10 w-[38vw] h-[38vw] bg-[#1a3828]/[0.3] rounded-full blur-[150px] pointer-events-none" />
 
       {/* Main Hero Grid */}
-      <div className="shell w-full my-auto grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
+      <div className="shell w-full my-auto grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-14 items-center">
         {/* Left Column: Expressive Typography & Storytelling */}
-        <div className="space-y-6 z-10">
+        <div className="space-y-7 z-10">
           {/* Status badge */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: EASE }}
-            className="inline-flex items-center gap-2.5 px-3 py-1 rounded-full bg-white/5 border border-white/10"
+            className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-md"
           >
             <span className="w-2 h-2 rounded-full bg-[#c8f53c] animate-ping" />
-            <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-[#f4f1ea]/90">
+            <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#f4f1ea]/90">
               Independent Builder &amp; Engineering Student
             </span>
           </motion.div>
 
           {/* Large Expressive Typography */}
-          <div className="space-y-2">
+          <div className="space-y-3">
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: EASE, delay: 0.05 }}
+              className="font-mono text-xs uppercase tracking-[0.28em] text-[#c8f53c]"
+            >
+              [ 01 // ARCHIVE · BTECH 2026–2030 ]
+            </motion.div>
+
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: EASE, delay: 0.1 }}
-              className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-normal leading-[0.94] tracking-tight text-[#f4f1ea]"
+              className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-normal leading-[0.92] tracking-tight text-[#f4f1ea]"
             >
               Parshva <span className="italic font-serif text-[#a8a49a]">Shah</span>
             </motion.h1>
@@ -78,7 +87,7 @@ export default function Hero({ reduced = false }) {
             transition={{ duration: 0.7, ease: EASE, delay: 0.3 }}
             className="text-sm sm:text-base md:text-lg text-[#a8a49a] font-sans max-w-xl leading-relaxed"
           >
-            I'm Parshva — a developer, engineering student at KJ Somaiya, and independent builder exploring the intersection of software engineering, AI and product design.
+            I'm Parshva — a developer, engineering student at KJ Somaiya School of Engineering (BTech AI &amp; DS 2026–2030), and independent builder exploring the intersection of software engineering, AI, and product design.
           </motion.p>
 
           {/* Primary Action Buttons */}
@@ -91,7 +100,7 @@ export default function Hero({ reduced = false }) {
             <MagneticButton
               href="#work"
               reduced={reduced}
-              className="bg-[#c8f53c]! text-black! font-semibold hover:bg-[#d8ff54]! shadow-lg px-6 py-3"
+              className="bg-[#c8f53c]! text-black! font-semibold hover:bg-[#d8ff54]! shadow-[0_10px_30px_rgba(200,245,60,0.25)] px-7 py-3.5 text-sm"
             >
               Explore Project Universe →
             </MagneticButton>
@@ -100,9 +109,9 @@ export default function Hero({ reduced = false }) {
               href="#about"
               variant="outline"
               reduced={reduced}
-              className="border-white/20 hover:border-white px-6 py-3 text-white"
+              className="border-white/20 hover:border-white px-6 py-3.5 text-white text-sm"
             >
-              About Parshva
+              About &amp; Manifesto
             </MagneticButton>
           </motion.div>
 
@@ -111,7 +120,7 @@ export default function Hero({ reduced = false }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.5 }}
-            className="pt-4 flex items-center gap-4 font-mono text-xs text-white/50"
+            className="pt-2 flex items-center gap-4 font-mono text-xs text-white/50"
           >
             <span className="text-[#c8f53c] font-bold">●</span>
             <div className="h-5 overflow-hidden">
@@ -132,24 +141,14 @@ export default function Hero({ reduced = false }) {
           </motion.div>
         </div>
 
-        {/* Right Column: High-Quality Personal Photograph Matrix */}
+        {/* Right Column: Editorial Photograph Frame with Parshva's Authentic Pictures */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.9, ease: EASE, delay: 0.2 }}
-          className="relative h-[42vh] sm:h-[50vh] lg:h-[62vh] rounded-3xl overflow-hidden border border-white/10 bg-[#060a08]/80 backdrop-blur-sm p-2 group"
+          className="relative w-full z-10"
         >
-          {/* Luminance-mapped interactive particle matrix canvas */}
-          <div className="w-full h-full relative rounded-2xl overflow-hidden">
-            <PortraitMatrix src={`${import.meta.env.BASE_URL}parshva-portrait.png`} reduced={reduced} />
-          </div>
-
-          {/* Subtle spatial caption overlay */}
-          <div className="pointer-events-none absolute bottom-4 inset-x-0 flex justify-center">
-            <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-white/50 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/10">
-              Interactive Pixel Matrix · Hover to perturb
-            </span>
-          </div>
+          <EditorialPortraitHero reduced={reduced} />
         </motion.div>
       </div>
 
