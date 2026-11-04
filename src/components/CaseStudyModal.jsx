@@ -1,0 +1,384 @@
+import { useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import ProjectThumbnail from './ProjectThumbnail'
+import { projects } from '../data/projects'
+
+export default function CaseStudyModal({ project, onClose, onSelectNext }) {
+  const scrollRef = useRef(null)
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!project) return undefined
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    // Prevent body scroll while modal is active
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [project, onClose])
+
+  if (!project) return null
+
+  const s = project.sections || {}
+  const nextProject = projects.find((p) => p.id === s.nextProjectId) || projects[0]
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="fixed inset-0 z-50 overflow-y-auto bg-[#030504]/96 backdrop-blur-2xl text-white"
+        ref={scrollRef}
+      >
+        {/* Top sticky editorial bar */}
+        <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#040705]/85 backdrop-blur-md">
+          <div className="shell flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <span
+                className="font-mono text-xs px-2 py-0.5 rounded font-bold"
+                style={{ backgroundColor: `${project.color}20`, color: project.color }}
+              >
+                PROJ {project.num}
+              </span>
+              <span className="text-white/40 text-xs hidden sm:inline">/</span>
+              <span className="font-mono text-xs text-white/70 uppercase tracking-wider hidden sm:inline">
+                {project.category}
+              </span>
+              <span className="text-white/30 text-xs hidden md:inline">—</span>
+              <span className="font-display font-semibold text-sm text-white/90 truncate max-w-[240px] md:max-w-none">
+                {project.title}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {project.link && project.link.startsWith('http') && (
+                <a
+                  href={project.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono border border-white/20 bg-white/5 hover:bg-white/10 transition-colors"
+                >
+                  <span>{project.linkLabel || 'Live Demo'}</span>
+                  <span className="text-xs">↗</span>
+                </a>
+              )}
+              {project.github && (
+                <a
+                  href={project.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-white/80"
+                >
+                  <span>GitHub</span>
+                  <span className="text-xs">↗</span>
+                </a>
+              )}
+              <button
+                onClick={onClose}
+                aria-label="Close Case Study"
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-mono bg-white/10 hover:bg-white/20 transition-all text-white border border-white/15"
+              >
+                <span>Close</span>
+                <span className="text-sm leading-none">✕</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Case Study Content */}
+        <main className="shell py-12 md:py-20 max-w-4xl mx-auto space-y-16">
+          {/* 01. Project Intro & Headlines */}
+          <section className="space-y-6">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-white/60">
+              <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                {project.status}
+              </span>
+              <span>·</span>
+              <span>Year {project.year}</span>
+              <span>·</span>
+              <span>Verified Production Build</span>
+            </div>
+
+            <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-normal leading-[1.05] tracking-tight text-[#f5f5f3]">
+              {project.title}
+            </h1>
+            <p className="font-serif italic text-xl sm:text-2xl text-white/70 max-w-2xl leading-relaxed">
+              {project.subtitle}
+            </p>
+
+            <p className="text-base sm:text-lg text-white/80 font-sans leading-relaxed pt-2 border-t border-white/10">
+              {s.intro}
+            </p>
+          </section>
+
+          {/* 02. Hero Visual Presentation */}
+          <section className="space-y-4">
+            <div className="w-full h-80 sm:h-96 md:h-[420px] rounded-2xl overflow-hidden border border-white/15 shadow-2xl relative">
+              <ProjectThumbnail project={project} className="!p-8" />
+            </div>
+            {s.heroVisual && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-white/50 font-mono gap-1 px-1">
+                <span className="text-white/80">{s.heroVisual.headline}</span>
+                <span>{s.heroVisual.caption}</span>
+              </div>
+            )}
+          </section>
+
+          {/* 03 & 04 & 05. Overview, Problem, Why Built */}
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-white/10">
+            <div className="space-y-3">
+              <span className="font-mono text-xs uppercase tracking-widest text-[#c8f53c]">
+                03 — Project Overview
+              </span>
+              <p className="text-sm sm:text-base text-white/80 leading-relaxed font-sans">
+                {s.overview}
+              </p>
+            </div>
+            <div className="space-y-3">
+              <span className="font-mono text-xs uppercase tracking-widest text-[#d8b375]">
+                04 — Problem Statement
+              </span>
+              <p className="text-sm sm:text-base text-white/80 leading-relaxed font-sans">
+                {s.problem}
+              </p>
+            </div>
+          </section>
+
+          <section className="p-6 sm:p-8 rounded-2xl bg-white/[0.02] border border-white/10 space-y-3">
+            <span className="font-mono text-xs uppercase tracking-widest text-[#c8f53c]">
+              05 — Why I Decided To Build It
+            </span>
+            <p className="text-base text-white/90 leading-relaxed font-sans italic">
+              "{s.whyBuilt}"
+            </p>
+          </section>
+
+          {/* 06 & 07. Research & Architecture */}
+          <section className="space-y-8 pt-8 border-t border-white/10">
+            <div className="space-y-3">
+              <span className="font-mono text-xs uppercase tracking-widest text-[#a8a49a]">
+                06 — Research &amp; Planning
+              </span>
+              <p className="text-sm sm:text-base text-white/80 leading-relaxed font-sans">
+                {s.research}
+              </p>
+            </div>
+
+            {s.architecture && (
+              <div className="p-6 sm:p-8 rounded-2xl bg-[#070d0a] border border-[#c8f53c]/20 space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <span className="font-mono text-xs uppercase tracking-widest text-[#c8f53c]">
+                    07 — Architecture &amp; Technical Decisions
+                  </span>
+                  <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#c8f53c]/10 text-[#c8f53c] border border-[#c8f53c]/20">
+                    {s.architecture.pattern}
+                  </span>
+                </div>
+
+                <div className="text-sm text-white/80 leading-relaxed font-mono whitespace-pre-line bg-black/40 p-4 rounded-xl border border-white/5">
+                  {s.architecture.description}
+                </div>
+
+                {s.architecture.flow && (
+                  <div className="space-y-2">
+                    <div className="text-xs font-mono text-white/50 uppercase tracking-wider">
+                      Execution Pipeline
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {s.architecture.flow.map((step, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <span className="px-2.5 py-1 rounded bg-white/5 border border-white/10 text-xs font-mono text-white/80">
+                            {idx + 1}. {step}
+                          </span>
+                          {idx < s.architecture.flow.length - 1 && (
+                            <span className="text-white/30 text-xs">→</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+
+          {/* 08 & 09. UI/UX & Development */}
+          <section className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-white/10">
+            <div className="space-y-3">
+              <span className="font-mono text-xs uppercase tracking-widest text-[#c8f53c]">
+                08 — UI/UX &amp; Design Process
+              </span>
+              <p className="text-sm sm:text-base text-white/80 leading-relaxed font-sans">
+                {s.uiUx}
+              </p>
+            </div>
+            <div className="space-y-3">
+              <span className="font-mono text-xs uppercase tracking-widest text-[#d8b375]">
+                09 — Development Process
+              </span>
+              <p className="text-sm sm:text-base text-white/80 leading-relaxed font-sans">
+                {s.development}
+              </p>
+            </div>
+          </section>
+
+          {/* 10. Tech Stack Details */}
+          {s.techStackDetails && (
+            <section className="space-y-4 pt-8 border-t border-white/10">
+              <span className="font-mono text-xs uppercase tracking-widest text-[#c8f53c]">
+                10 — Tech Stack Breakdown &amp; Rationale
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {s.techStackDetails.map((tech, idx) => (
+                  <div
+                    key={idx}
+                    className="p-4 rounded-xl bg-white/[0.02] border border-white/10 space-y-1"
+                  >
+                    <div className="font-mono font-semibold text-sm text-[#c8f53c]">
+                      {tech.name}
+                    </div>
+                    <div className="text-xs text-white/70 font-sans leading-relaxed">
+                      {tech.role}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* 11 & 12. Challenges & Solutions */}
+          {s.challenges && s.solutions && (
+            <section className="space-y-6 pt-8 border-t border-white/10">
+              <span className="font-mono text-xs uppercase tracking-widest text-[#d8b375]">
+                11 &amp; 12 — Engineering Challenges &amp; Solutions
+              </span>
+              <div className="space-y-4">
+                {s.challenges.map((ch, idx) => (
+                  <div
+                    key={idx}
+                    className="p-5 rounded-xl bg-white/[0.02] border border-white/10 space-y-3"
+                  >
+                    <div className="flex items-start gap-2.5">
+                      <span className="font-mono text-xs px-2 py-0.5 rounded bg-red-500/10 text-red-300 border border-red-500/20 shrink-0">
+                        Challenge
+                      </span>
+                      <p className="text-sm text-white/90 font-medium">{ch}</p>
+                    </div>
+                    <div className="flex items-start gap-2.5 pl-2 sm:pl-4 border-l-2 border-[#c8f53c]/40">
+                      <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#c8f53c]/10 text-[#c8f53c] border border-[#c8f53c]/20 shrink-0">
+                        Solution
+                      </span>
+                      <p className="text-xs sm:text-sm text-white/80 font-sans leading-relaxed">
+                        {s.solutions[idx] || 'Custom algorithmic resolution applied.'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* 13 & 14. Key Highlights & Learnings */}
+          <section className="space-y-6 pt-8 border-t border-white/10">
+            {s.demonstration && (
+              <div className="space-y-3">
+                <span className="font-mono text-xs uppercase tracking-widest text-[#c8f53c]">
+                  13 — Feature Demonstrations &amp; Capabilities
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {s.demonstration.map((demo, idx) => (
+                    <div
+                      key={idx}
+                      className="p-4 rounded-xl bg-white/[0.02] border border-white/10 space-y-1"
+                    >
+                      <div className="font-mono text-xs text-white/50">{demo.label}</div>
+                      <div className="text-sm font-semibold text-white">{demo.detail}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="p-6 rounded-xl bg-[#08140c]/40 border border-[#c8f53c]/20 space-y-2">
+              <span className="font-mono text-xs uppercase tracking-widest text-[#c8f53c]">
+                14 — Results &amp; What I Learned
+              </span>
+              <p className="text-sm sm:text-base text-white/90 leading-relaxed font-sans">
+                {s.resultsLearnings}
+              </p>
+            </div>
+          </section>
+
+          {/* 15. Action Links */}
+          <section className="pt-8 border-t border-white/10 flex flex-wrap items-center justify-between gap-4 p-6 sm:p-8 rounded-2xl bg-gradient-to-r from-white/[0.03] to-white/[0.01] border border-white/15">
+            <div>
+              <div className="font-display font-semibold text-lg text-white">
+                Ready to explore the live application?
+              </div>
+              <div className="text-xs text-white/60 font-mono mt-0.5">
+                Verify the live deployment or view repository source code.
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {project.link && project.link.startsWith('http') && (
+                <a
+                  href={project.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 rounded-full text-xs font-mono font-semibold bg-[#c8f53c] text-black hover:bg-[#d8ff54] transition-all shadow-lg"
+                >
+                  {project.linkLabel || 'Open Live Project'} ↗
+                </a>
+              )}
+              {project.github && (
+                <a
+                  href={project.github}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-5 py-2.5 rounded-full text-xs font-mono border border-white/20 bg-white/5 hover:bg-white/10 transition-colors text-white"
+                >
+                  View GitHub Source ↗
+                </a>
+              )}
+            </div>
+          </section>
+
+          {/* 16. Next Project Navigation */}
+          {nextProject && (
+            <footer className="pt-12 pb-16 border-t border-white/10">
+              <button
+                onClick={() => {
+                  onSelectNext(nextProject)
+                  if (scrollRef.current) scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+                }}
+                className="w-full group p-8 rounded-2xl bg-[#080d0b] border border-white/10 hover:border-[#c8f53c]/40 transition-all text-left flex items-center justify-between"
+              >
+                <div>
+                  <div className="font-mono text-xs uppercase tracking-widest text-[#c8f53c] mb-1">
+                    16 — Next Case Study → PROJ {nextProject.num}
+                  </div>
+                  <div className="font-serif text-2xl sm:text-3xl text-white group-hover:text-[#c8f53c] transition-colors">
+                    {nextProject.title}
+                  </div>
+                  <div className="text-xs text-white/50 font-sans mt-1">
+                    {nextProject.subtitle}
+                  </div>
+                </div>
+                <span className="font-mono text-2xl text-white/40 group-hover:text-[#c8f53c] group-hover:translate-x-2 transition-all">
+                  →
+                </span>
+              </button>
+            </footer>
+          )}
+        </main>
+      </motion.div>
+    </AnimatePresence>
+  )
+}

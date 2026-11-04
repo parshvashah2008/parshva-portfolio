@@ -1,0 +1,350 @@
+import { Suspense, useMemo, useRef } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { Float, Html, Stars, OrbitControls } from '@react-three/drei'
+import * as THREE from 'three'
+import ProjectThumbnail from '../components/ProjectThumbnail'
+
+/**
+ * 3D Project Node floating in spatial universe
+ */
+function ProjectSpatialNode({
+  project,
+  position,
+  active,
+  hovered,
+  onHover,
+  onSelect,
+  reduced,
+  filterMatch,
+}) {
+  const meshRef = useRef(null)
+  const isSelected = active?.id === project.id
+  const isHovered = hovered?.id === project.id
+
+  // Subtle pulsing animation on the spatial core
+  useFrame((state, delta) => {
+    if (!meshRef.current || reduced) return
+    meshRef.current.rotation.y += delta * 0.4
+    meshRef.current.rotation.x += delta * 0.2
+  })
+
+  return (
+    <Float
+      speed={reduced ? 0 : 1.2}
+      rotationIntensity={reduced ? 0 : 0.3}
+      floatIntensity={reduced ? 0 : 0.9}
+      position={position}
+    >
+      <group>
+        {/* Core glowing orb */}
+        <mesh
+          ref={meshRef}
+          onClick={(e) => {
+            e.stopPropagation()
+            onSelect(project)
+          }}
+          onPointerOver={(e) => {
+            e.stopPropagation()
+            onHover(project)
+          }}
+          onPointerOut={() => onHover(null)}
+          scale={isSelected ? 1.6 : isHovered ? 1.3 : 1}
+        >
+          <octahedronGeometry args={[0.22, 0]} />
+          <meshStandardMaterial
+            color={project.color}
+            emissive={project.color}
+            emissiveIntensity={isSelected ? 1.4 : isHovered ? 1.0 : 0.6}
+            wireframe
+          />
+        </mesh>
+
+        {/* Ambient halo glow */}
+        <pointLight
+          color={project.color}
+          intensity={isSelected ? 1.8 : isHovered ? 1.2 : 0.4}
+          distance={3.5}
+        />
+
+        {/* Interactive 3D Spatial Card */}
+        <Html
+          center
+          distanceFactor={7.8}
+          position={[0, 0, 0]}
+          style={{
+            transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+            opacity: filterMatch ? 1 : 0.25,
+            pointerEvents: filterMatch ? 'auto' : 'none',
+          }}
+        >
+          <div
+            onClick={(e) => {
+              e.stopPropagation()
+              onSelect(project)
+            }}
+            onMouseEnter={() => onHover(project)}
+            onMouseLeave={() => onHover(null)}
+            className={`cursor-pointer transition-all duration-300 select-none ${
+              isSelected
+                ? 'scale-110 z-50'
+                : isHovered
+                ? 'scale-105 z-40'
+                : 'hover:scale-102 opacity-90'
+            }`}
+            style={{ width: '270px' }}
+          >
+            <div
+              className="relative p-3 rounded-2xl backdrop-blur-xl border transition-all duration-300 shadow-2xl"
+              style={{
+                backgroundColor: isSelected
+                  ? 'rgba(10, 16, 14, 0.92)'
+                  : isHovered
+                  ? 'rgba(12, 20, 17, 0.88)'
+                  : 'rgba(6, 10, 8, 0.78)',
+                borderColor: isSelected
+                  ? project.color
+                  : isHovered
+                  ? 'rgba(255, 255, 255, 0.28)'
+                  : 'rgba(255, 255, 255, 0.08)',
+                boxShadow: isSelected
+                  ? `0 0 35px ${project.color}35, 0 20px 40px rgba(0,0,0,0.8)`
+                  : isHovered
+                  ? `0 0 24px ${project.color}25, 0 16px 30px rgba(0,0,0,0.7)`
+                  : '0 10px 25px rgba(0,0,0,0.6)',
+              }}
+            >
+              {/* Card Header */}
+              <div className="flex items-center justify-between mb-2">
+                <span
+                  className="font-mono text-[10px] font-bold tracking-widest px-1.5 py-0.5 rounded"
+                  style={{
+                    backgroundColor: `${project.color}18`,
+                    color: project.color,
+                  }}
+                >
+                  {project.num}
+                </span>
+                <span className="font-mono text-[9px] uppercase tracking-wider text-white/50">
+                  {project.category}
+                </span>
+              </div>
+
+              {/* Card Visual Preview */}
+              <div className="w-full h-28 rounded-lg overflow-hidden border border-white/10 mb-2.5">
+                <ProjectThumbnail project={project} compact={true} />
+              </div>
+
+              {/* Project Title & Short Subtitle */}
+              <h3 className="font-display font-semibold text-sm text-white line-clamp-1 leading-snug">
+                {project.title}
+              </h3>
+              <p className="text-[11px] text-white/60 line-clamp-1 mt-0.5 font-sans">
+                {project.subtitle}
+              </p>
+
+              {/* Stack Chips */}
+              <div className="flex flex-wrap gap-1 mt-2.5">
+                {project.stack.slice(0, 3).map((st) => (
+                  <span
+                    key={st}
+                    className="font-mono text-[8.5px] px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-white/70"
+                  >
+                    {st}
+                  </span>
+                ))}
+                {project.stack.length > 3 && (
+                  <span className="font-mono text-[8.5px] px-1 py-0.5 text-white/40">
+                    +{project.stack.length - 3}
+                  </span>
+                )}
+              </div>
+
+              {/* Click to open badge */}
+              <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-white/60 font-mono">
+                <span className="flex items-center gap-1 text-[9px] text-white/40">
+                  <span
+                    className="w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: project.color }}
+                  />
+                  {project.status.split(' ')[0]}
+                </span>
+                <span
+                  className="font-semibold transition-colors duration-200"
+                  style={{ color: isHovered || isSelected ? project.color : 'inherit' }}
+                >
+                  Explore Case Study →
+                </span>
+              </div>
+            </div>
+          </div>
+        </Html>
+      </group>
+    </Float>
+  )
+}
+
+/**
+ * Animated Ambient Nebular Particle Cloud
+ */
+function CosmicParticles({ count = 800, reduced = false }) {
+  const pointsRef = useRef(null)
+
+  const [positions, colors] = useMemo(() => {
+    const pos = new Float32Array(count * 3)
+    const col = new Float32Array(count * 3)
+
+    const colorA = new THREE.Color('#c8f53c')
+    const colorB = new THREE.Color('#f4f1ea')
+    const colorC = new THREE.Color('#4a785d')
+
+    for (let i = 0; i < count; i++) {
+      // Golden spiral spherical distribution
+      const u = Math.random()
+      const v = Math.random()
+      const theta = u * 2.0 * Math.PI
+      const phi = Math.acos(2.0 * v - 1.0)
+      const r = 5.0 + Math.random() * 8.0
+
+      pos[i * 3] = r * Math.sin(phi) * Math.cos(theta)
+      pos[i * 3 + 1] = (r * Math.sin(phi) * Math.sin(theta)) * 0.65
+      pos[i * 3 + 2] = r * Math.cos(phi)
+
+      const mixed = Math.random() < 0.4 ? colorA : Math.random() < 0.7 ? colorB : colorC
+      col[i * 3] = mixed.r
+      col[i * 3 + 1] = mixed.g
+      col[i * 3 + 2] = mixed.b
+    }
+
+    return [pos, col]
+  }, [count])
+
+  useFrame((state, delta) => {
+    if (!pointsRef.current || reduced) return
+    pointsRef.current.rotation.y += delta * 0.03
+    pointsRef.current.rotation.x += delta * 0.015
+  })
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          args={[positions, 3]}
+        />
+        <bufferAttribute
+          attach="attributes-color"
+          args={[colors, 3]}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.032}
+        vertexColors
+        transparent
+        opacity={0.65}
+        sizeAttenuation
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  )
+}
+
+/**
+ * Main 3D Project Universe Experience Canvas
+ */
+export default function ProjectUniverseScene({
+  projects = [],
+  activeProject,
+  hoveredProject,
+  onHoverProject,
+  onSelectProject,
+  activeFilter = 'All',
+  reduced = false,
+}) {
+  const controlsRef = useRef(null)
+
+  // Distribute projects in a 3D celestial ellipse / constellation
+  const positions = useMemo(() => {
+    const total = projects.length
+    return projects.map((_, i) => {
+      // Cylindrical/elliptical orbital distribution
+      const angle = (i / total) * Math.PI * 2
+      const radius = 4.2 + (i % 2 === 0 ? 0.6 : -0.4)
+      const height = ((i % 3) - 1) * 1.5 + Math.sin(i * 1.5) * 0.6
+      const zOffset = Math.sin(angle) * radius * 0.9
+
+      return [
+        Math.cos(angle) * radius,
+        height,
+        zOffset,
+      ]
+    })
+  }, [projects])
+
+  return (
+    <Canvas
+      camera={{ position: [0, 0.4, 7.8], fov: 46 }}
+      dpr={[1, 1.8]}
+      gl={{ antialias: true, alpha: true }}
+      className="w-full h-full cursor-grab active:cursor-grabbing"
+    >
+      <color attach="background" args={['#040504']} />
+      <fog attach="fog" args={['#040504', 9, 22]} />
+
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[5, 8, 5]} intensity={0.7} color="#f4f1ea" />
+      <pointLight position={[0, 0, 0]} intensity={1.2} color="#c8f53c" distance={12} />
+
+      <Suspense fallback={null}>
+        {/* Background stars */}
+        <Stars
+          radius={30}
+          depth={40}
+          count={1800}
+          factor={3.5}
+          saturation={0.5}
+          fade
+          speed={reduced ? 0 : 0.6}
+        />
+
+        {/* Ambient nebular particle system */}
+        <CosmicParticles count={900} reduced={reduced} />
+
+        {/* Interactive 3D Project Constellation Nodes */}
+        {projects.map((p, idx) => {
+          const match =
+            activeFilter === 'All' ||
+            p.category.toLowerCase().includes(activeFilter.toLowerCase()) ||
+            (activeFilter === 'Experiments' && p.category === 'Experiments') ||
+            (activeFilter === 'AI & Machine Learning' && p.category.includes('AI'))
+
+          return (
+            <ProjectSpatialNode
+              key={p.id}
+              project={p}
+              position={positions[idx]}
+              active={activeProject}
+              hovered={hoveredProject}
+              onHover={onHoverProject}
+              onSelect={onSelectProject}
+              reduced={reduced}
+              filterMatch={match}
+            />
+          )
+        })}
+
+        {/* Orbit / Pan controls */}
+        <OrbitControls
+          ref={controlsRef}
+          enableDamping
+          dampingFactor={0.06}
+          rotateSpeed={0.65}
+          zoomSpeed={0.8}
+          minDistance={3.5}
+          maxDistance={12.5}
+          maxPolarAngle={Math.PI / 1.7}
+          minPolarAngle={Math.PI / 3.4}
+        />
+      </Suspense>
+    </Canvas>
+  )
+}
