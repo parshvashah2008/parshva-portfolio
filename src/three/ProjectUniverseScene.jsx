@@ -312,14 +312,14 @@ export default function ProjectUniverseScene({
 }) {
   const controlsRef = useRef(null)
 
-  // Distribute projects in a 3D celestial ellipse / constellation
+  // Distribute projects in an elevated 3D celestial ellipse / constellation
   const positions = useMemo(() => {
     const total = projects.length
     return projects.map((_, i) => {
-      // Cylindrical/elliptical orbital distribution
+      // Cylindrical/elliptical orbital distribution positioned above the bottom HUD
       const angle = (i / total) * Math.PI * 2
-      const radius = 4.2 + (i % 2 === 0 ? 0.6 : -0.4)
-      const height = ((i % 3) - 1) * 1.5 + Math.sin(i * 1.5) * 0.6
+      const radius = 4.4 + (i % 2 === 0 ? 0.4 : -0.3)
+      const height = ((i % 3) - 0.1) * 1.1 + Math.sin(i * 1.4) * 0.35
       const zOffset = Math.sin(angle) * radius * 0.9
 
       return [
@@ -332,7 +332,7 @@ export default function ProjectUniverseScene({
 
   return (
     <Canvas
-      camera={{ position: [0, 0.4, 7.8], fov: 46 }}
+      camera={{ position: [0, 0.7, 8.2], fov: 44 }}
       dpr={[1, 1.8]}
       gl={{ antialias: true, alpha: true }}
       className="w-full h-full cursor-grab active:cursor-grabbing"
@@ -390,10 +390,11 @@ export default function ProjectUniverseScene({
           dampingFactor={0.06}
           rotateSpeed={0.65}
           zoomSpeed={0.8}
-          minDistance={3.5}
-          maxDistance={12.5}
-          maxPolarAngle={Math.PI / 1.7}
+          minDistance={4.2}
+          maxDistance={12.0}
+          maxPolarAngle={Math.PI / 1.85}
           minPolarAngle={Math.PI / 3.4}
+          target={[0, 0.6, 0]}
         />
       </Suspense>
     </Canvas>

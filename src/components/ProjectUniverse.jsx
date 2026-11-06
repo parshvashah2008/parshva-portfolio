@@ -141,70 +141,98 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
             </div>
           </div>
 
-          {/* Bottom Project Preview Dock (Vadim Carazan HUD) */}
+          {/* Bottom Cinematic Gradient Scrim: ensures clean separation between 3D orbit & HUD dock */}
+          <div className="absolute inset-x-0 bottom-0 h-36 sm:h-44 bg-gradient-to-t from-[#040504] via-[#040504]/80 to-transparent pointer-events-none z-10" />
+
+          {/* Bottom Project Preview Dock (Bespoke Spatial HUD Capsule) */}
           {currentDisplayProject && !activeCaseStudy && (
-            <div className="absolute bottom-4 inset-x-0 z-20 pointer-events-none">
-              <div className="shell flex justify-center">
-                <div className="pointer-events-auto w-full max-w-2xl p-4 sm:p-5 rounded-2xl bg-[#090e0c]/90 border border-white/15 backdrop-blur-xl shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-4 w-full sm:w-auto">
-                    {/* Mini visual indicator */}
-                    <div className="w-12 h-12 rounded-xl border border-white/10 overflow-hidden shrink-0 hidden sm:block">
-                      <ProjectThumbnail project={currentDisplayProject} compact={true} />
+            <div className="absolute bottom-4 sm:bottom-6 inset-x-0 z-20 pointer-events-none">
+              <div className="shell flex justify-center px-3 sm:px-6">
+                <div
+                  className="pointer-events-auto w-full max-w-3xl px-4 py-3 sm:px-5 sm:py-3 rounded-2xl sm:rounded-full bg-[#070c09]/95 border border-white/20 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6 transition-all duration-300"
+                  style={{
+                    boxShadow: `0 0 40px ${currentDisplayProject.color}15, 0 20px 50px rgba(0,0,0,0.9)`
+                  }}
+                >
+                  {/* Left: Project identity & context */}
+                  <div className="flex items-center gap-3.5 min-w-0 w-full sm:w-auto">
+                    {/* Index badge with live pulse */}
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 shrink-0">
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{ backgroundColor: currentDisplayProject.color }}
+                      />
+                      <span className="font-mono text-[10px] font-bold text-white tracking-wider">
+                        {currentDisplayProject.num}
+                      </span>
                     </div>
 
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2 font-mono text-[10px] text-white/50">
-                        <span className="text-[#c8f53c] font-bold">
-                          [ {currentDisplayProject.num} / {String(projects.length).padStart(2, '0')} ]
+                    <div className="min-w-0 space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-display font-semibold text-sm sm:text-base text-white truncate">
+                          {currentDisplayProject.title}
                         </span>
-                        <span>·</span>
-                        <span className="uppercase">{currentDisplayProject.category}</span>
-                        <span>·</span>
-                        <span className="text-[#c8f53c]">{currentDisplayProject.status.split(' ')[0]}</span>
+                        <span className="font-mono text-[10px] uppercase text-[#c8f53c] hidden md:inline shrink-0 px-2 py-0.5 rounded-full bg-[#c8f53c]/10 border border-[#c8f53c]/20">
+                          {currentDisplayProject.category}
+                        </span>
                       </div>
-                      <h4 className="font-serif text-lg sm:text-xl font-normal text-white">
-                        {currentDisplayProject.title}
-                      </h4>
-                      <p className="text-xs text-white/60 line-clamp-1 max-w-md font-sans">
+                      <p className="text-xs text-white/60 truncate font-sans hidden sm:block max-w-md">
                         {currentDisplayProject.subtitle}
                       </p>
                     </div>
                   </div>
 
-                  {/* Actions & Carousel Navigation */}
-                  <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-white/10">
-                    <div className="flex items-center gap-1 font-mono text-xs">
+                  {/* Right: Stepper controls & Actions */}
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end shrink-0">
+                    {/* Carousel Navigation Stepper */}
+                    <div className="flex items-center gap-1">
                       <button
-                        onClick={() => cycleProject(-1)}
-                        className="w-8 h-8 rounded-full border border-white/10 bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/80 transition-colors cursor-pointer"
+                        type="button"
+                        onClick={() => {
+                          playSyntheticSound('click')
+                          cycleProject(-1)
+                        }}
+                        className="w-8 h-8 rounded-full border border-white/15 bg-white/5 hover:bg-white/15 active:scale-95 flex items-center justify-center text-white/80 hover:text-white transition-all cursor-pointer text-xs"
+                        aria-label="Previous project"
                         title="Previous project"
                       >
                         ←
                       </button>
                       <button
-                        onClick={() => cycleProject(1)}
-                        className="w-8 h-8 rounded-full border border-white/10 bg-white/5 hover:bg-white/15 flex items-center justify-center text-white/80 transition-colors cursor-pointer"
+                        type="button"
+                        onClick={() => {
+                          playSyntheticSound('click')
+                          cycleProject(1)
+                        }}
+                        className="w-8 h-8 rounded-full border border-white/15 bg-white/5 hover:bg-white/15 active:scale-95 flex items-center justify-center text-white/80 hover:text-white transition-all cursor-pointer text-xs"
+                        aria-label="Next project"
                         title="Next project"
                       >
                         →
                       </button>
                     </div>
 
+                    {/* Live App Link if applicable */}
                     {currentDisplayProject.link && currentDisplayProject.link.startsWith('http') && (
                       <a
                         href={currentDisplayProject.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3.5 py-2 rounded-full font-mono text-xs font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-all flex items-center gap-1 cursor-pointer"
+                        className="px-3.5 py-1.5 rounded-full font-mono text-xs border border-white/20 bg-white/5 hover:bg-white/15 active:scale-95 text-white transition-all flex items-center gap-1 cursor-pointer shrink-0"
                       >
                         <span>Live</span>
-                        <span>↗</span>
+                        <span className="text-[11px]">↗</span>
                       </a>
                     )}
 
+                    {/* Primary Case Study Action */}
                     <button
-                      onClick={() => setActiveCaseStudy(currentDisplayProject)}
-                      className="px-4 py-2 rounded-full font-mono text-xs font-semibold bg-[#c8f53c] text-black hover:bg-[#d8ff54] transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                      type="button"
+                      onClick={() => {
+                        playSyntheticSound('open')
+                        setActiveCaseStudy(currentDisplayProject)
+                      }}
+                      className="px-4 py-1.5 rounded-full font-mono text-xs font-semibold bg-[#c8f53c] text-black hover:bg-[#d8ff54] active:scale-95 transition-all shadow-[0_0_20px_rgba(200,245,60,0.3)] flex items-center gap-1.5 cursor-pointer shrink-0"
                     >
                       <span>Case Study</span>
                       <span>→</span>
