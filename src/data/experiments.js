@@ -4,6 +4,16 @@
 
 export const experiments = [
   {
+    id: 'architecture-cli',
+    title: 'Interactive CLI Terminal',
+    category: 'Interactive Shell & Systems',
+    date: '2026',
+    status: 'Live Terminal',
+    description: 'An in-browser UNIX-like shell console connected to Parshva\'s live capabilities, verified credentials, build manifests, and builder manifesto with keystroke sound synthesis and command history.',
+    tags: ['Interactive Shell', 'Bash Emulator', 'Web Audio Synthesizer', 'Command History'],
+    controls: ['Type "help" for command matrix', 'Arrow Up / Down for history', 'Run "about", "projects", or "sudo hire"'],
+  },
+  {
     id: 'particle-gravity',
     title: 'Gravitational Particle Vortex',
     category: 'Physics & Canvas 2D',

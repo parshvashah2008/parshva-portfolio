@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { playSyntheticSound } from '../utils/soundFX'
 
 const EASE = [0.16, 1, 0.3, 1]
 
@@ -58,9 +59,15 @@ export default function EditorialPortraitHero({ reduced = false }) {
     setIsHovered(false)
   }
 
-  // Keyboard navigation
+  // Keyboard and click navigation
   const nextPerspective = () => {
+    playSyntheticSound('shutter')
     setActiveIdx((prev) => (prev + 1) % PORTRAITS.length)
+  }
+
+  const selectPerspective = (idx) => {
+    playSyntheticSound('shutter')
+    setActiveIdx(idx)
   }
 
   return (
@@ -68,6 +75,7 @@ export default function EditorialPortraitHero({ reduced = false }) {
       {/* Editorial Frame with 3D Tilt */}
       <div
         ref={containerRef}
+        data-cursor="view"
         onMouseMove={handleMouseMove}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={handleMouseLeave}
@@ -130,7 +138,7 @@ export default function EditorialPortraitHero({ reduced = false }) {
                 <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#c8f53c]">
                   {active.tag}
                 </span>
-                <span className="font-mono text-[10px] text-white/40">{active.location}</span>
+                <span className="font-mono text-[10px] text-[#a8a49a]">{active.location}</span>
               </div>
 
               <div className="font-serif text-lg sm:text-2xl text-white font-normal leading-snug">
@@ -138,7 +146,7 @@ export default function EditorialPortraitHero({ reduced = false }) {
               </div>
 
               {active.id !== 'jersey' && (
-                <p className="text-xs text-white/70 font-sans line-clamp-2 leading-relaxed">
+                <p className="text-xs text-white/80 font-sans line-clamp-2 leading-relaxed">
                   {active.caption}
                 </p>
               )}
@@ -160,11 +168,11 @@ export default function EditorialPortraitHero({ reduced = false }) {
           {PORTRAITS.map((p, idx) => (
             <button
               key={p.id}
-              onClick={() => setActiveIdx(idx)}
+              onClick={() => selectPerspective(idx)}
               className={`px-3 py-1.5 rounded-full font-mono text-[11px] uppercase tracking-wider transition-all cursor-pointer ${
                 activeIdx === idx
                   ? 'bg-[#c8f53c] text-black font-semibold shadow-[0_0_15px_rgba(200,245,60,0.3)]'
-                  : 'bg-white/5 text-white/60 hover:text-white hover:bg-white/10 border border-white/5'
+                  : 'bg-white/5 text-white/70 hover:text-white hover:bg-white/10 border border-white/5'
               }`}
             >
               0{idx + 1} // {p.id === 'street' ? 'Street' : p.id === 'jersey' ? 'Jersey 04' : 'Portrait'}

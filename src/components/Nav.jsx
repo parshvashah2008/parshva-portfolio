@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import MagneticButton from './MagneticButton'
+import { isSoundEnabled, toggleSound, playSyntheticSound } from '../utils/soundFX'
 
 const LINKS = [
   { id: 'work', label: 'Work (Universe)' },
@@ -16,6 +17,7 @@ export default function Nav({ reduced = false }) {
   const [active, setActive] = useState('')
   const [progress, setProgress] = useState(0)
   const [open, setOpen] = useState(false)
+  const [soundActive, setSoundActive] = useState(isSoundEnabled())
 
   useEffect(() => {
     function onScroll() {
@@ -95,6 +97,8 @@ export default function Nav({ reduced = false }) {
               <a
                 key={l.id}
                 href={'#' + l.id}
+                onMouseEnter={() => playSyntheticSound('tick')}
+                onClick={() => playSyntheticSound('click')}
                 className="relative px-3.5 py-1.5 font-mono text-xs transition-colors rounded-full"
                 style={{ color: active === l.id ? '#c8f53c' : 'rgba(244, 241, 234, 0.65)' }}
               >
@@ -110,8 +114,27 @@ export default function Nav({ reduced = false }) {
             ))}
           </nav>
 
-          {/* Contact Action & Mobile Hamburger */}
-          <div className="flex items-center gap-3">
+          {/* Audio Toggle, Contact Action & Mobile Hamburger */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Audio Toggle Button */}
+            <button
+              type="button"
+              onClick={() => {
+                const nowOn = toggleSound()
+                setSoundActive(nowOn)
+              }}
+              onMouseEnter={() => playSyntheticSound('tick')}
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full font-mono text-[10px] sm:text-[11px] border transition-all flex items-center gap-1.5 cursor-pointer ${
+                soundActive
+                  ? 'border-[#c8f53c] text-[#c8f53c] bg-[#c8f53c]/10 shadow-[0_0_12px_rgba(200,245,60,0.2)] font-semibold'
+                  : 'border-white/15 text-white/50 bg-white/5 hover:text-white/80 hover:border-white/30'
+              }`}
+              title="Toggle Synthesized Audio Feedback"
+            >
+              <span className="text-xs">{soundActive ? '♫' : '♪'}</span>
+              <span className="hidden md:inline">{soundActive ? 'AUDIO: ON' : 'AUDIO: OFF'}</span>
+            </button>
+
             <MagneticButton
               href="#contact"
               variant="outline"

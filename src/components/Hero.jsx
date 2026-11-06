@@ -152,27 +152,35 @@ export default function Hero({ reduced = false }) {
         </motion.div>
       </div>
 
-      {/* Information Strip (Specification Requirement) */}
+      {/* Information Strip (Specification Requirement & Live Activity Radar) */}
       <div className="shell relative z-20 mt-12 pt-6 border-t border-white/10">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono">
-          <div className="flex flex-col gap-1">
-            <span className="text-white/40 uppercase tracking-widest text-[10px]">Currently</span>
-            <span className="text-white/80 font-sans text-xs">
-              Building digital products &amp; exploring AI engineering
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-xs font-mono">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[#a8a49a] uppercase tracking-widest text-[10px] font-semibold flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#c8f53c] animate-pulse" />
+              Live Activity Status
+            </span>
+            <span className="text-white/90 font-sans text-xs flex items-center gap-2">
+              <span className="text-[#c8f53c] font-mono">●</span>
+              <span>Active Builder · Pushing code to GitHub (@parshvashah2008)</span>
             </span>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <span className="text-white/40 uppercase tracking-widest text-[10px]">Based in</span>
-            <span className="text-white/80 font-sans text-xs flex items-center gap-1.5">
-              <span>🇮🇳</span> Mumbai / Surat, India
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[#a8a49a] uppercase tracking-widest text-[10px] font-semibold">
+              Location &amp; Academic Base
+            </span>
+            <span className="text-white/90 font-sans text-xs flex items-center gap-1.5">
+              <span>🇮🇳</span> Mumbai / Surat · KJ Somaiya School of Engineering
             </span>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <span className="text-white/40 uppercase tracking-widest text-[10px]">Focus</span>
-            <span className="text-white/80 font-sans text-xs">
-              Software Engineering · AI · Web Dev · Product Building
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[#a8a49a] uppercase tracking-widest text-[10px] font-semibold">
+              Engineering Focus
+            </span>
+            <span className="text-white/90 font-sans text-xs">
+              Software Engineering · AI Agent Systems · WebGL &amp; Full-Stack
             </span>
           </div>
         </div>

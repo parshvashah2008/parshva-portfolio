@@ -67,10 +67,10 @@ export default function ContactSection() {
           {/* Direct Channels */}
           <div className="space-y-6">
             <div className="space-y-2">
-              <span className="font-mono text-xs uppercase tracking-widest text-white/40">
+              <span className="font-mono text-xs uppercase tracking-widest text-[#a8a49a] font-semibold">
                 Direct Communication Channels
               </span>
-              <p className="text-sm text-white/70 font-sans">
+              <p className="text-sm text-white/80 font-sans">
                 Feel free to reach out directly via email, send a message through the form, or connect on LinkedIn and GitHub.
               </p>
             </div>
@@ -79,7 +79,7 @@ export default function ContactSection() {
               {/* Email Card with Copy Feature */}
               <div className="p-5 rounded-2xl bg-[#080d0a] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
                 <div className="space-y-0.5">
-                  <div className="font-mono text-[10px] text-white/40 uppercase">Email Address</div>
+                  <div className="font-mono text-[10px] text-[#a8a49a] uppercase font-semibold">Email Address</div>
                   <a
                     href={`mailto:${contact.email}`}
                     className="font-mono text-sm sm:text-base text-white group-hover:text-[#c8f53c] transition-colors"
@@ -116,7 +116,7 @@ export default function ContactSection() {
                     <div className="text-sm font-semibold text-white group-hover:text-[#c8f53c]">
                       LinkedIn Profile
                     </div>
-                    <div className="font-mono text-[10px] text-white/40">/in/parshva-shah-592022328</div>
+                    <div className="font-mono text-[10px] text-[#a8a49a]">/in/parshva-shah-592022328</div>
                   </div>
                   <span className="text-white/30 group-hover:text-[#c8f53c] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all text-base">↗</span>
                 </a>
@@ -132,7 +132,7 @@ export default function ContactSection() {
                     <div className="text-sm font-semibold text-white group-hover:text-[#c8f53c]">
                       GitHub
                     </div>
-                    <div className="font-mono text-[10px] text-white/40">@parshvashah2008</div>
+                    <div className="font-mono text-[10px] text-[#a8a49a]">@parshvashah2008</div>
                   </div>
                   <span className="text-white/30 group-hover:text-[#c8f53c] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all text-base">↗</span>
                 </a>

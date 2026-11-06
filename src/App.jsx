@@ -11,6 +11,8 @@ import Backdrop from './components/Backdrop'
 import Nav from './components/Nav'
 import FloatRail from './components/FloatRail'
 import Marquee from './components/Marquee'
+import CustomCursor from './components/CustomCursor'
+import FilmGrainOverlay from './components/FilmGrainOverlay'
 
 // Complete 9-Page Portfolio Architecture
 import Hero from './components/Hero'                           // Page 01: Home / Introduction
@@ -46,6 +48,8 @@ export default function App() {
 
   return (
     <>
+      <CustomCursor reduced={reduced} />
+      <FilmGrainOverlay reduced={reduced} />
       <Loader reduced={reduced} onDone={() => setLoading(false)} />
       <Backdrop reduced={reduced} />
       <Nav reduced={reduced} />

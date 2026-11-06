@@ -4,6 +4,7 @@ import { projects } from '../data/projects'
 import ProjectUniverseScene from '../three/ProjectUniverseScene'
 import ProjectThumbnail from './ProjectThumbnail'
 import CaseStudyModal from './CaseStudyModal'
+import { playSyntheticSound } from '../utils/soundFX'
 
 const FILTERS = ['All', 'AI & Machine Learning', 'Web Development', 'SaaS & Products', 'Experiments']
 
@@ -105,7 +106,7 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
               {f}
             </button>
           ))}
-          <span className="ml-auto font-mono text-xs text-white/40 hidden sm:inline">
+          <span className="ml-auto font-mono text-xs text-[#a8a49a] font-semibold hidden sm:inline">
             Showing {filteredProjects.length} of {projects.length} artifacts
           </span>
         </div>
@@ -113,7 +114,10 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
 
       {/* Main Experience View */}
       {viewMode === '3d' ? (
-        <div className="relative w-full h-[68vh] sm:h-[72vh] md:h-[76vh]">
+        <div
+          data-cursor="orbit"
+          className="relative w-full h-[68vh] sm:h-[72vh] md:h-[76vh]"
+        >
           {/* Spatial Three.js Scene */}
           <ProjectUniverseScene
             projects={filteredProjects}
@@ -121,6 +125,7 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
             hoveredProject={hoveredProject}
             onHoverProject={setHoveredProject}
             onSelectProject={(p) => {
+              playSyntheticSound('open')
               setSelectedProject(p)
               setActiveCaseStudy(p)
             }}

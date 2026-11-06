@@ -85,7 +85,7 @@ export default function WritingSection() {
               </p>
 
               <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-mono text-white/50">
-                <span className="text-white/40">Read architectural deep dive</span>
+                <span className="text-[#a8a49a]">Read architectural deep dive</span>
                 <span className="text-[#c8f53c] font-semibold group-hover:translate-x-1 transition-transform">
                   Read Article →
                 </span>
@@ -103,7 +103,7 @@ export default function WritingSection() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-50 overflow-y-auto bg-[#030504]/96 backdrop-blur-2xl text-white"
+            className="fixed inset-0 z-[999999] overflow-y-auto bg-[#030504]/96 backdrop-blur-2xl text-white"
           >
             {/* Header */}
             <div className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#040705]/90 backdrop-blur-md">

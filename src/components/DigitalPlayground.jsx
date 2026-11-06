@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { experiments } from '../data/experiments'
+import ParshvaCLI from './ParshvaCLI'
 
 /**
  * 1. Live Interactive Particle Gravity Well Canvas
@@ -373,15 +374,16 @@ export default function DigitalPlayground({ reduced = false }) {
 
         {/* Active Playground Canvas */}
         <div className="space-y-6">
-          {activeTab === 0 && <ParticleVortexLab reduced={reduced} />}
-          {activeTab === 1 && <AudioVisualizerLab />}
-          {activeTab === 2 && <ParticleVortexLab reduced={reduced} />}
-          {activeTab === 3 && <KineticTypographyLab />}
+          {activeTab === 0 && <ParshvaCLI />}
+          {activeTab === 1 && <ParticleVortexLab reduced={reduced} />}
+          {activeTab === 2 && <AudioVisualizerLab />}
+          {activeTab === 3 && <ParticleVortexLab reduced={reduced} />}
+          {activeTab === 4 && <KineticTypographyLab />}
 
           {/* Experiment Technical Specs Card */}
           <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-1">
-              <span className="font-mono text-xs text-white/40 uppercase tracking-widest">
+              <span className="font-mono text-xs text-[#a8a49a] uppercase tracking-widest">
                 Concept &amp; Mechanics
               </span>
               <p className="text-xs sm:text-sm text-white/80 font-sans leading-relaxed">
@@ -390,7 +392,7 @@ export default function DigitalPlayground({ reduced = false }) {
             </div>
 
             <div className="space-y-2">
-              <span className="font-mono text-xs text-white/40 uppercase tracking-widest">
+              <span className="font-mono text-xs text-[#a8a49a] uppercase tracking-widest">
                 Techniques Applied
               </span>
               <div className="flex flex-wrap gap-1.5">
@@ -406,13 +408,13 @@ export default function DigitalPlayground({ reduced = false }) {
             </div>
 
             <div className="space-y-2">
-              <span className="font-mono text-xs text-white/40 uppercase tracking-widest">
+              <span className="font-mono text-xs text-[#a8a49a] uppercase tracking-widest">
                 Interaction Instructions
               </span>
-              <ul className="text-xs text-white/70 font-mono space-y-1">
+              <ul className="text-xs text-white/80 font-mono space-y-1">
                 {experiments[activeTab].controls.map((ctrl, i) => (
                   <li key={i} className="flex items-center gap-2">
-                    <span className="text-[#d8b375]">→</span> {ctrl}
+                    <span className="text-[#c8f53c]">→</span> {ctrl}
                   </li>
                 ))}
               </ul>

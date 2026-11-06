@@ -3,6 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Float, Html, Stars, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import ProjectThumbnail from '../components/ProjectThumbnail'
+import { playSyntheticSound } from '../utils/soundFX'
 
 /**
  * 3D Project Node floating in spatial universe
@@ -82,9 +83,13 @@ function ProjectSpatialNode({
           <div
             onClick={(e) => {
               e.stopPropagation()
+              playSyntheticSound('click')
               onSelect(project)
             }}
-            onMouseEnter={() => onHover(project)}
+            onMouseEnter={() => {
+              playSyntheticSound('tick')
+              onHover(project)
+            }}
             onMouseLeave={() => onHover(null)}
             className={`cursor-pointer transition-all duration-300 select-none ${
               isSelected
@@ -96,25 +101,36 @@ function ProjectSpatialNode({
             style={{ width: '270px' }}
           >
             <div
-              className="relative p-3 rounded-2xl backdrop-blur-xl border transition-all duration-300 shadow-2xl"
+              className="relative p-3 rounded-2xl backdrop-blur-xl border transition-all duration-300 shadow-2xl overflow-hidden group"
               style={{
                 backgroundColor: isSelected
-                  ? 'rgba(10, 16, 14, 0.92)'
+                  ? 'rgba(10, 16, 14, 0.94)'
                   : isHovered
-                  ? 'rgba(12, 20, 17, 0.88)'
-                  : 'rgba(6, 10, 8, 0.78)',
+                  ? 'rgba(12, 20, 17, 0.90)'
+                  : 'rgba(6, 10, 8, 0.82)',
                 borderColor: isSelected
                   ? project.color
                   : isHovered
-                  ? 'rgba(255, 255, 255, 0.28)'
-                  : 'rgba(255, 255, 255, 0.08)',
+                  ? 'rgba(255, 255, 255, 0.32)'
+                  : 'rgba(255, 255, 255, 0.10)',
                 boxShadow: isSelected
-                  ? `0 0 35px ${project.color}35, 0 20px 40px rgba(0,0,0,0.8)`
+                  ? `0 0 38px ${project.color}45, 0 20px 40px rgba(0,0,0,0.85)`
                   : isHovered
-                  ? `0 0 24px ${project.color}25, 0 16px 30px rgba(0,0,0,0.7)`
-                  : '0 10px 25px rgba(0,0,0,0.6)',
+                  ? `0 0 26px ${project.color}30, 0 16px 30px rgba(0,0,0,0.75)`
+                  : '0 10px 25px rgba(0,0,0,0.65)',
               }}
             >
+              {/* Holographic dynamic sheen */}
+              <div
+                className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style={{ mixBlendMode: 'overlay' }}
+              />
+
+              {/* Sci-fi corner brackets */}
+              <div className="absolute top-1.5 left-1.5 w-1.5 h-1.5 border-t border-l border-white/20 pointer-events-none" />
+              <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 border-t border-r border-white/20 pointer-events-none" />
+              <div className="absolute bottom-1.5 left-1.5 w-1.5 h-1.5 border-b border-l border-white/20 pointer-events-none" />
+              <div className="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 border-b border-r border-white/20 pointer-events-none" />
               {/* Card Header */}
               <div className="flex items-center justify-between mb-2">
                 <span

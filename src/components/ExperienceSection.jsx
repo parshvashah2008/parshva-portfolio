@@ -228,7 +228,7 @@ export default function ExperienceSection() {
 
                     {/* Skills Applied */}
                     <div className="space-y-1.5 pt-2 border-t border-white/5">
-                      <div className="font-mono text-[10px] uppercase tracking-wider text-white/40">
+                      <div className="font-mono text-[10px] uppercase tracking-wider text-[#a8a49a] font-semibold">
                         Skills Applied:
                       </div>
                       <div className="flex flex-wrap gap-1.5">
@@ -313,7 +313,7 @@ export default function ExperienceSection() {
                     </div>
 
                     {cert.partner && (
-                      <div className="font-mono text-[10px] text-white/40">
+                      <div className="font-mono text-[10px] text-[#a8a49a]">
                         Partner: {cert.partner}
                       </div>
                     )}

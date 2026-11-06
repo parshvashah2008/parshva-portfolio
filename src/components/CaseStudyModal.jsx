@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ProjectThumbnail from './ProjectThumbnail'
 import { projects } from '../data/projects'
+import { playSyntheticSound } from '../utils/soundFX'
 
 export default function CaseStudyModal({ project, onClose, onSelectNext }) {
   const scrollRef = useRef(null)
@@ -10,7 +11,10 @@ export default function CaseStudyModal({ project, onClose, onSelectNext }) {
   useEffect(() => {
     if (!project) return undefined
     function handleKeyDown(e) {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        playSyntheticSound('close')
+        onClose()
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     // Prevent body scroll while modal is active
@@ -82,7 +86,10 @@ export default function CaseStudyModal({ project, onClose, onSelectNext }) {
               )}
               <button
                 type="button"
-                onClick={onClose}
+                onClick={() => {
+                  playSyntheticSound('close')
+                  onClose()
+                }}
                 aria-label="Close Case Study"
                 className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-xs font-mono bg-white/15 hover:bg-white/25 active:scale-95 transition-all text-white border border-white/20 cursor-pointer shadow shrink-0"
               >
