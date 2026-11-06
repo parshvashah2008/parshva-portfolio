@@ -183,73 +183,76 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
             onDistanceChange={handleDistanceChange}
           />
 
-          {/* Top Control Hint (Positioned left-side on larger screens) */}
-          <div className="pointer-events-none absolute top-4 left-4 sm:left-8 lg:left-12 z-20 hidden md:flex">
-            <div className="px-3.5 py-1.5 rounded-full bg-black/70 border border-white/10 backdrop-blur-md font-mono text-[11px] text-white/60 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
-              <span>Drag to orbit celestial sphere</span>
-            </div>
-          </div>
-
-          {/* Spatial Neon Zoom Scroll Bar HUD (Cleared from right-side floating social rail) */}
-          <div className="absolute top-4 right-3 sm:top-4 sm:right-16 lg:right-20 z-30 pointer-events-auto">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#070c09]/95 border border-[#c8f53c]/45 backdrop-blur-2xl shadow-[0_0_24px_rgba(200,245,60,0.22)]">
-              {/* Reticle / Target indicator */}
-              <div className="flex items-center gap-1.5 pr-2 border-r border-white/15">
-                <span className="w-2 h-2 rounded-full bg-[#c8f53c] shadow-[0_0_8px_#c8f53c] animate-pulse" />
-                <span className="font-mono text-[10px] uppercase tracking-wider text-[#c8f53c] font-bold hidden xs:inline">
-                  ZOOM
-                </span>
+          {/* Top Control HUD Overlay constrained to shell */}
+          <div className="absolute top-4 inset-x-0 z-30 pointer-events-none">
+            <div className="shell flex items-center justify-between">
+              {/* Left Control Hint */}
+              <div className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/70 border border-white/10 backdrop-blur-md font-mono text-[11px] text-white/60">
+                <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
+                <span>Drag to orbit celestial sphere</span>
               </div>
 
-              {/* Zoom Out Button */}
-              <button
-                type="button"
-                onClick={() => adjustZoom(-15)}
-                className="w-5 h-5 rounded-full bg-white/5 border border-white/15 hover:border-[#c8f53c] hover:text-[#c8f53c] text-white/80 font-mono text-xs flex items-center justify-center transition-all cursor-pointer active:scale-90"
-                title="Zoom Out (−)"
-                aria-label="Zoom Out"
-              >
-                −
-              </button>
+              {/* Spatial Neon Zoom Scroll Bar HUD */}
+              <div className="pointer-events-auto ml-auto">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#070c09]/95 border border-[#c8f53c]/45 backdrop-blur-2xl shadow-[0_0_24px_rgba(200,245,60,0.22)]">
+                  {/* Reticle / Target indicator */}
+                  <div className="flex items-center gap-1.5 pr-2 border-r border-white/15">
+                    <span className="w-2 h-2 rounded-full bg-[#c8f53c] shadow-[0_0_8px_#c8f53c] animate-pulse" />
+                    <span className="font-mono text-[10px] uppercase tracking-wider text-[#c8f53c] font-bold hidden xs:inline">
+                      ZOOM
+                    </span>
+                  </div>
 
-              {/* Neon Zoom Scroll Bar Slider */}
-              <div className="relative w-20 sm:w-28 flex items-center">
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={zoomPercent}
-                  onChange={handleSliderChange}
-                  onMouseDown={() => { isDraggingSlider.current = true }}
-                  onMouseUp={() => { isDraggingSlider.current = false }}
-                  onTouchStart={() => { isDraggingSlider.current = true }}
-                  onTouchEnd={() => { isDraggingSlider.current = false }}
-                  className="neon-zoom-slider"
-                  aria-label="Orbit Camera Zoom Scroll Bar"
-                />
+                  {/* Zoom Out Button */}
+                  <button
+                    type="button"
+                    onClick={() => adjustZoom(-15)}
+                    className="w-5 h-5 rounded-full bg-white/5 border border-white/15 hover:border-[#c8f53c] hover:text-[#c8f53c] text-white/80 font-mono text-xs flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                    title="Zoom Out (−)"
+                    aria-label="Zoom Out"
+                  >
+                    −
+                  </button>
+
+                  {/* Neon Zoom Scroll Bar Slider */}
+                  <div className="relative w-20 sm:w-28 flex items-center">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={zoomPercent}
+                      onChange={handleSliderChange}
+                      onMouseDown={() => { isDraggingSlider.current = true }}
+                      onMouseUp={() => { isDraggingSlider.current = false }}
+                      onTouchStart={() => { isDraggingSlider.current = true }}
+                      onTouchEnd={() => { isDraggingSlider.current = false }}
+                      className="neon-zoom-slider"
+                      aria-label="Orbit Camera Zoom Scroll Bar"
+                    />
+                  </div>
+
+                  {/* Zoom In Button */}
+                  <button
+                    type="button"
+                    onClick={() => adjustZoom(15)}
+                    className="w-5 h-5 rounded-full bg-white/5 border border-white/15 hover:border-[#c8f53c] hover:text-[#c8f53c] text-white/80 font-mono text-xs flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                    title="Zoom In (+)"
+                    aria-label="Zoom In"
+                  >
+                    +
+                  </button>
+
+                  {/* Live Zoom Percentage Badge (Click to Reset) */}
+                  <button
+                    type="button"
+                    onClick={resetZoom}
+                    className="font-mono text-[10px] text-[#c8f53c] font-bold px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/15 border border-white/10 hover:border-[#c8f53c]/50 transition-all cursor-pointer tabular-nums min-w-[34px] text-center"
+                    title="Click to reset zoom to default (1.0x)"
+                  >
+                    {zoomPercent}%
+                  </button>
+                </div>
               </div>
-
-              {/* Zoom In Button */}
-              <button
-                type="button"
-                onClick={() => adjustZoom(15)}
-                className="w-5 h-5 rounded-full bg-white/5 border border-white/15 hover:border-[#c8f53c] hover:text-[#c8f53c] text-white/80 font-mono text-xs flex items-center justify-center transition-all cursor-pointer active:scale-90"
-                title="Zoom In (+)"
-                aria-label="Zoom In"
-              >
-                +
-              </button>
-
-              {/* Live Zoom Percentage Badge (Click to Reset) */}
-              <button
-                type="button"
-                onClick={resetZoom}
-                className="font-mono text-[10px] text-[#c8f53c] font-bold px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/15 border border-white/10 hover:border-[#c8f53c]/50 transition-all cursor-pointer tabular-nums min-w-[34px] text-center"
-                title="Click to reset zoom to default (1.0x)"
-              >
-                {zoomPercent}%
-              </button>
             </div>
           </div>
 
