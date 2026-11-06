@@ -131,10 +131,10 @@ export default function Hero({ reduced = false }) {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -12 }}
                   transition={{ duration: 0.4 }}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 text-white/80"
                 >
                   <span className="font-bold text-white text-sm">{stats[activeStat].n}</span>
-                  <span>{stats[activeStat].l}</span>
+                  <span className="text-[#a8a49a] font-medium">{stats[activeStat].l}</span>
                 </motion.div>
               </AnimatePresence>
             </div>

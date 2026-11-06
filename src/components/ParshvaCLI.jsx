@@ -166,10 +166,10 @@ export default function ParshvaCLI() {
             parshva@somaiya-arch: ~/systems-lab
           </span>
         </div>
-        <div className="flex items-center gap-2 text-white/40 text-[10px]">
+        <div className="flex items-center gap-2 text-[#a8a49a] text-[10px] font-medium">
           <span>bash 5.2</span>
           <span>·</span>
-          <span className="text-[#c8f53c]">ACTIVE</span>
+          <span className="text-[#c8f53c] font-semibold">ACTIVE</span>
         </div>
       </div>
 
@@ -212,8 +212,8 @@ export default function ParshvaCLI() {
       </div>
 
       {/* Terminal Footer Quick Suggestions */}
-      <div className="px-4 py-2 bg-[#060a07] border-t border-white/5 flex flex-wrap items-center gap-2 text-[10px] text-white/50 select-none">
-        <span className="text-white/30">Quick Run:</span>
+      <div className="px-4 py-2 bg-[#060a07] border-t border-white/5 flex flex-wrap items-center gap-2 text-[10px] text-white/70 select-none">
+        <span className="text-[#a8a49a] font-semibold">Quick Run:</span>
         {['help', 'about', 'skills', 'projects', 'cat manifesto', 'sudo hire'].map((cmd) => (
           <button
             key={cmd}
