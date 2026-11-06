@@ -1,8 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { playSyntheticSound } from '../utils/soundFX'
-
-const EASE = [0.16, 1, 0.3, 1]
 
 const PORTRAITS = [
   {
@@ -106,27 +103,31 @@ export default function EditorialPortraitHero({ reduced = false }) {
         }}
         className="relative h-[48vh] sm:h-[56vh] lg:h-[66vh] w-full rounded-3xl overflow-hidden border border-white/[0.12] bg-[#060807] shadow-[0_24px_80px_rgba(0,0,0,0.8)] select-none group"
       >
-        {/* Photo Canvas with direct snappy crossfade */}
-        <AnimatePresence initial={false}>
-          <motion.div
-            key={active.id}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="absolute inset-0 w-full h-full"
-          >
-            <img
-              src={active.src}
-              alt={active.title}
-              className={`w-full h-full ${active.aspect} contrast-[1.08] brightness-[0.98] group-hover:scale-[1.02] transition-transform duration-700`}
-            />
+        {/* Photo Canvas with pure GPU-accelerated CSS crossfade */}
+        <div className="absolute inset-0 w-full h-full overflow-hidden">
+          {PORTRAITS.map((p, idx) => {
+            const isCurrent = idx === activeIdx
+            return (
+              <div
+                key={p.id}
+                className={`absolute inset-0 w-full h-full transition-opacity duration-300 ease-out ${
+                  isCurrent ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                }`}
+              >
+                <img
+                  src={p.src}
+                  alt={p.title}
+                  loading="eager"
+                  className={`w-full h-full ${p.aspect} contrast-[1.08] brightness-[0.98] group-hover:scale-[1.02] transition-transform duration-700`}
+                />
 
-            {/* Cinematic vignetting and atmospheric lighting */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#040504] via-[#040504]/20 to-[#040504]/40 pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#040504]/30 via-transparent to-[#040504]/30 pointer-events-none" />
-          </motion.div>
-        </AnimatePresence>
+                {/* Cinematic vignetting and atmospheric lighting */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#040504] via-[#040504]/20 to-[#040504]/40 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#040504]/30 via-transparent to-[#040504]/30 pointer-events-none" />
+              </div>
+            )
+          })}
+        </div>
 
         {/* Viewfinder crosshairs and technical metadata */}
         <div className="absolute inset-0 p-5 sm:p-6 flex flex-col justify-between pointer-events-none z-10">
