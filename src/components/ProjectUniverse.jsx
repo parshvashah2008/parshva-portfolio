@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { projects } from '../data/projects'
 import ProjectUniverseScene from '../three/ProjectUniverseScene'
@@ -8,12 +8,59 @@ import { playSyntheticSound } from '../utils/soundFX'
 
 const FILTERS = ['All', 'AI & Machine Learning', 'Web Development', 'SaaS & Products', 'Experiments']
 
+const MIN_ZOOM_DIST = 4.2
+const MAX_ZOOM_DIST = 12.0
+const DEFAULT_ZOOM_DIST = 8.2
+
+function distToPercent(dist) {
+  const clamped = Math.max(MIN_ZOOM_DIST, Math.min(MAX_ZOOM_DIST, dist))
+  return Math.round(((MAX_ZOOM_DIST - clamped) / (MAX_ZOOM_DIST - MIN_ZOOM_DIST)) * 100)
+}
+
+function percentToDist(pct) {
+  const clamped = Math.max(0, Math.min(100, pct))
+  return MAX_ZOOM_DIST - (clamped / 100) * (MAX_ZOOM_DIST - MIN_ZOOM_DIST)
+}
+
 export default function ProjectUniverse({ reduced = false, lowPower = false }) {
   const [activeFilter, setActiveFilter] = useState('All')
   const [viewMode, setViewMode] = useState(lowPower ? 'editorial' : '3d') // default to 3D on desktop
   const [hoveredProject, setHoveredProject] = useState(null)
   const [selectedProject, setSelectedProject] = useState(null)
   const [activeCaseStudy, setActiveCaseStudy] = useState(null)
+
+  // Neon Zoom Scroll Bar State for 3D Orbit
+  const [zoomPercent, setZoomPercent] = useState(() => distToPercent(DEFAULT_ZOOM_DIST))
+  const [zoomDistance, setZoomDistance] = useState(DEFAULT_ZOOM_DIST)
+  const isDraggingSlider = useRef(false)
+
+  const handleSliderChange = (e) => {
+    isDraggingSlider.current = true
+    const pct = Number(e.target.value)
+    setZoomPercent(pct)
+    setZoomDistance(percentToDist(pct))
+  }
+
+  const handleDistanceChange = useCallback((dist) => {
+    if (isDraggingSlider.current) return
+    const pct = distToPercent(dist)
+    setZoomPercent((prev) => (Math.abs(prev - pct) >= 1 ? pct : prev))
+  }, [])
+
+  const adjustZoom = (deltaPct) => {
+    playSyntheticSound('tick')
+    setZoomPercent((prev) => {
+      const next = Math.max(0, Math.min(100, prev + deltaPct))
+      setZoomDistance(percentToDist(next))
+      return next
+    })
+  }
+
+  const resetZoom = () => {
+    playSyntheticSound('click')
+    setZoomPercent(distToPercent(DEFAULT_ZOOM_DIST))
+    setZoomDistance(DEFAULT_ZOOM_DIST)
+  }
 
   // Default selected project to first project
   useEffect(() => {
@@ -132,12 +179,76 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
             activeFilter={activeFilter}
             reduced={reduced}
             modalOpen={Boolean(activeCaseStudy)}
+            zoomDistance={zoomDistance}
+            onDistanceChange={handleDistanceChange}
           />
 
-          {/* Top Control Hint */}
-          <div className="pointer-events-none absolute top-4 inset-x-0 flex justify-center z-10">
+          {/* Top Control Hint (Hidden on very small screens to avoid clutter) */}
+          <div className="pointer-events-none absolute top-4 inset-x-0 justify-center z-10 hidden md:flex">
             <div className="px-3.5 py-1.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-md font-mono text-[11px] text-white/60">
-              Drag to orbit · Scroll to zoom · Click any node or button to explore
+              Drag to orbit · Scroll or drag Neon Scroll Bar to zoom · Click node to explore
+            </div>
+          </div>
+
+          {/* Spatial Neon Zoom Scroll Bar HUD */}
+          <div className="absolute top-4 right-3 sm:top-4 sm:right-6 z-30 pointer-events-auto">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#070c09]/95 border border-[#c8f53c]/40 backdrop-blur-2xl shadow-[0_0_24px_rgba(200,245,60,0.22)]">
+              {/* Reticle / Target indicator */}
+              <div className="flex items-center gap-1.5 pr-2 border-r border-white/15">
+                <span className="w-2 h-2 rounded-full bg-[#c8f53c] shadow-[0_0_8px_#c8f53c] animate-pulse" />
+                <span className="font-mono text-[10px] uppercase tracking-wider text-[#c8f53c] font-bold hidden xs:inline">
+                  ZOOM
+                </span>
+              </div>
+
+              {/* Zoom Out Button */}
+              <button
+                type="button"
+                onClick={() => adjustZoom(-15)}
+                className="w-5 h-5 rounded-full bg-white/5 border border-white/15 hover:border-[#c8f53c] hover:text-[#c8f53c] text-white/80 font-mono text-xs flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                title="Zoom Out (−)"
+                aria-label="Zoom Out"
+              >
+                −
+              </button>
+
+              {/* Neon Zoom Scroll Bar Slider */}
+              <div className="relative w-20 sm:w-28 flex items-center">
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={zoomPercent}
+                  onChange={handleSliderChange}
+                  onMouseDown={() => { isDraggingSlider.current = true }}
+                  onMouseUp={() => { isDraggingSlider.current = false }}
+                  onTouchStart={() => { isDraggingSlider.current = true }}
+                  onTouchEnd={() => { isDraggingSlider.current = false }}
+                  className="neon-zoom-slider"
+                  aria-label="Orbit Camera Zoom Scroll Bar"
+                />
+              </div>
+
+              {/* Zoom In Button */}
+              <button
+                type="button"
+                onClick={() => adjustZoom(15)}
+                className="w-5 h-5 rounded-full bg-white/5 border border-white/15 hover:border-[#c8f53c] hover:text-[#c8f53c] text-white/80 font-mono text-xs flex items-center justify-center transition-all cursor-pointer active:scale-90"
+                title="Zoom In (+)"
+                aria-label="Zoom In"
+              >
+                +
+              </button>
+
+              {/* Live Zoom Percentage Badge (Click to Reset) */}
+              <button
+                type="button"
+                onClick={resetZoom}
+                className="font-mono text-[10px] text-[#c8f53c] font-bold px-1.5 py-0.5 rounded bg-white/5 hover:bg-white/15 border border-white/10 hover:border-[#c8f53c]/50 transition-all cursor-pointer tabular-nums min-w-[34px] text-center"
+                title="Click to reset zoom to default (1.0x)"
+              >
+                {zoomPercent}%
+              </button>
             </div>
           </div>
 

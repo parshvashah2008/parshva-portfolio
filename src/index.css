@@ -181,11 +181,92 @@ html.lenis,html.lenis body{ height:auto; }
 .animate-music-bar-3 { animation: musicBar3 0.95s ease-in-out infinite 0.3s; }
 .animate-music-bar-4 { animation: musicBar4 0.78s ease-in-out infinite 0.1s; }
 
-/* ---------- scrollbar ---------- */
-::-webkit-scrollbar{ width:7px; }
-::-webkit-scrollbar-track{ background:var(--bg); }
-::-webkit-scrollbar-thumb{ background:#19201a; border-radius:9px; border:2px solid var(--bg); }
-::-webkit-scrollbar-thumb:hover{ background:#253026; }
+/* ---------- custom cyber scrollbar ---------- */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: #8ba352 #050806;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050806;
+  border-left: 1px solid rgba(244, 241, 234, 0.06);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #c8f53c 0%, #688a44 60%, #2a4732 100%);
+  border-radius: 9999px;
+  border: 2px solid #050806;
+  box-shadow: 0 0 10px rgba(200, 245, 60, 0.35);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #dcf865 0%, #c8f53c 60%, #8ba352 100%);
+  box-shadow: 0 0 16px rgba(200, 245, 60, 0.65);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #c8f53c;
+  box-shadow: 0 0 22px rgba(200, 245, 60, 0.9);
+}
+
+/* ---------- 3D Orbit Neon Zoom Scroll Bar Slider ---------- */
+.neon-zoom-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(200, 245, 60, 0.15);
+  outline: none;
+  cursor: pointer;
+  border: 1px solid rgba(200, 245, 60, 0.35);
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.6);
+  transition: all 0.2s ease;
+}
+
+.neon-zoom-slider:hover {
+  border-color: rgba(200, 245, 60, 0.6);
+  box-shadow: 0 0 10px rgba(200, 245, 60, 0.25);
+}
+
+.neon-zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #c8f53c;
+  border: 2px solid #040806;
+  box-shadow: 0 0 12px #c8f53c, 0 0 20px rgba(200, 245, 60, 0.6);
+  cursor: grab;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.neon-zoom-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.25);
+  box-shadow: 0 0 18px #c8f53c, 0 0 28px rgba(200, 245, 60, 0.9);
+}
+
+.neon-zoom-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #c8f53c;
+  border: 2px solid #040806;
+  box-shadow: 0 0 12px #c8f53c, 0 0 20px rgba(200, 245, 60, 0.6);
+  cursor: grab;
+}
+
+.neon-zoom-slider::-moz-range-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.25);
+}
 
 /* ---------- reduced motion ---------- */
 @media (prefers-reduced-motion: reduce){

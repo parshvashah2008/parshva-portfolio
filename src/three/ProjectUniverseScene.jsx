@@ -1,5 +1,5 @@
-import { Suspense, useMemo, useRef } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Suspense, useMemo, useRef, useEffect } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Float, Html, Stars, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import ProjectThumbnail from '../components/ProjectThumbnail'
@@ -298,6 +298,44 @@ function CosmicParticles({ count = 800, reduced = false }) {
 }
 
 /**
+ * Camera Zoom Controller Bridge between UI Neon Scrollbar and Three.js OrbitControls
+ */
+function CameraZoomBridge({ targetDistance, onDistanceChange, controlsRef }) {
+  const { camera } = useThree()
+
+  // Smoothly update camera distance when slider or buttons are adjusted
+  useEffect(() => {
+    if (!controlsRef.current || targetDistance == null) return
+    const controls = controlsRef.current
+    const target = controls.target || new THREE.Vector3(0, 0.6, 0)
+
+    const dir = new THREE.Vector3().subVectors(camera.position, target)
+    if (dir.lengthSq() < 0.0001) return
+    dir.normalize()
+
+    camera.position.copy(target).addScaledVector(dir, targetDistance)
+    controls.update()
+  }, [targetDistance, camera, controlsRef])
+
+  // Report wheel / pinch zoom changes back to the slider
+  useEffect(() => {
+    const controls = controlsRef.current
+    if (!controls) return
+
+    const handleChange = () => {
+      const target = controls.target || new THREE.Vector3(0, 0.6, 0)
+      const currentDist = camera.position.distanceTo(target)
+      onDistanceChange?.(currentDist)
+    }
+
+    controls.addEventListener('change', handleChange)
+    return () => controls.removeEventListener('change', handleChange)
+  }, [controlsRef, camera, onDistanceChange])
+
+  return null
+}
+
+/**
  * Main 3D Project Universe Experience Canvas
  */
 export default function ProjectUniverseScene({
@@ -309,6 +347,8 @@ export default function ProjectUniverseScene({
   activeFilter = 'All',
   reduced = false,
   modalOpen = false,
+  zoomDistance,
+  onDistanceChange,
 }) {
   const controlsRef = useRef(null)
 
@@ -395,6 +435,13 @@ export default function ProjectUniverseScene({
           maxPolarAngle={Math.PI / 1.85}
           minPolarAngle={Math.PI / 3.4}
           target={[0, 0.6, 0]}
+        />
+
+        {/* Dynamic Zoom Bridge for Neon Zoom Scrollbar */}
+        <CameraZoomBridge
+          targetDistance={zoomDistance}
+          onDistanceChange={onDistanceChange}
+          controlsRef={controlsRef}
         />
       </Suspense>
     </Canvas>
