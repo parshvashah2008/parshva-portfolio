@@ -174,7 +174,10 @@ export default function ParshvaCLI() {
       </div>
 
       {/* Terminal Body */}
-      <div className="p-4 sm:p-6 overflow-y-auto max-h-[380px] space-y-3 font-mono leading-relaxed text-[#d4d1c9]">
+      <div
+        className="p-4 sm:p-6 overflow-y-auto overscroll-contain max-h-[380px] space-y-3 font-mono leading-relaxed text-[#d4d1c9]"
+        data-lenis-prevent="true"
+      >
         {history.map((item, idx) => (
           <div key={idx} className="whitespace-pre-wrap">
             {item.type === 'banner' ? (

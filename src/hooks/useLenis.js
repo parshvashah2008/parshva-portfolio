@@ -18,6 +18,12 @@ export function useLenis(reduced) {
       duration: 1.15,
       easing: (t) => 1 - Math.pow(1 - t, 3),
       smoothWheel: true,
+      prevent: (node) => {
+        return (
+          node?.hasAttribute?.('data-lenis-prevent') ||
+          Boolean(node?.closest?.('[data-lenis-prevent]'))
+        )
+      },
     })
 
     window.__lenis = lenis

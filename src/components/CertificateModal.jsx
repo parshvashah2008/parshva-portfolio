@@ -16,9 +16,11 @@ export default function CertificateModal({
     }
     window.addEventListener('keydown', onKeyDown)
     document.body.style.overflow = 'hidden'
+    window.__lenis?.stop()
     return () => {
       window.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = ''
+      window.__lenis?.start()
     }
   }, [onClose, onNext, onPrev])
 
@@ -26,7 +28,10 @@ export default function CertificateModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-6">
+      <div
+        className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-6"
+        data-lenis-prevent="true"
+      >
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -94,7 +99,10 @@ export default function CertificateModal({
           </div>
 
           {/* Certificate Image Canvas */}
-          <div className="flex-1 overflow-auto p-4 sm:p-6 bg-[#040604] flex items-center justify-center min-h-[300px]">
+          <div
+            className="flex-1 overflow-auto overscroll-contain p-4 sm:p-6 bg-[#040604] flex items-center justify-center min-h-[300px]"
+            data-lenis-prevent="true"
+          >
             {certificate.image ? (
               <img
                 src={certificate.image}

@@ -17,11 +17,13 @@ export default function CaseStudyModal({ project, onClose, onSelectNext }) {
       }
     }
     window.addEventListener('keydown', handleKeyDown)
-    // Prevent body scroll while modal is active
+    // Prevent body scroll while modal is active & pause Lenis smooth-scroll
     document.body.style.overflow = 'hidden'
+    window.__lenis?.stop()
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = ''
+      window.__lenis?.start()
     }
   }, [project, onClose])
 
@@ -37,7 +39,8 @@ export default function CaseStudyModal({ project, onClose, onSelectNext }) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.25 }}
-        className="fixed inset-0 z-[999999] overflow-y-auto bg-[#030504]/98 backdrop-blur-3xl text-white selection:bg-[#c8f53c] selection:text-black"
+        className="fixed inset-0 z-[999999] overflow-y-auto overscroll-contain bg-[#030504]/98 backdrop-blur-3xl text-white selection:bg-[#c8f53c] selection:text-black"
+        data-lenis-prevent="true"
         ref={scrollRef}
       >
         {/* Top sticky editorial bar */}

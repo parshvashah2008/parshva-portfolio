@@ -47,9 +47,16 @@ export default function Nav({ reduced = false }) {
   }, [])
 
   useEffect(() => {
-    document.body.style.overflow = open ? 'hidden' : ''
+    if (open) {
+      document.body.style.overflow = 'hidden'
+      window.__lenis?.stop()
+    } else {
+      document.body.style.overflow = ''
+      window.__lenis?.start()
+    }
     return () => {
       document.body.style.overflow = ''
+      window.__lenis?.start()
     }
   }, [open])
 
@@ -180,7 +187,8 @@ export default function Nav({ reduced = false }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-[45] lg:hidden bg-[#040605]/98 backdrop-blur-2xl flex flex-col justify-between p-8"
+            className="fixed inset-0 z-[45] lg:hidden bg-[#040605]/98 backdrop-blur-2xl flex flex-col justify-between p-8 overflow-y-auto overscroll-contain"
+            data-lenis-prevent="true"
             style={{ paddingTop: 'calc(var(--nav-h) + 20px)' }}
           >
             <div className="flex flex-col gap-3">

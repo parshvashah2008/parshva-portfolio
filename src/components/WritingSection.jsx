@@ -13,9 +13,11 @@ export default function WritingSection() {
     }
     window.addEventListener('keydown', onKeyDown)
     document.body.style.overflow = 'hidden'
+    window.__lenis?.stop()
     return () => {
       window.removeEventListener('keydown', onKeyDown)
       document.body.style.overflow = ''
+      window.__lenis?.start()
     }
   }, [activeArticle])
 
@@ -103,7 +105,8 @@ export default function WritingSection() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[999999] overflow-y-auto bg-[#030504]/96 backdrop-blur-2xl text-white"
+            className="fixed inset-0 z-[999999] overflow-y-auto overscroll-contain bg-[#030504]/96 backdrop-blur-2xl text-white"
+            data-lenis-prevent="true"
           >
             {/* Header */}
             <div className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#040705]/90 backdrop-blur-md">
