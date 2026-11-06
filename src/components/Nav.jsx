@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import MagneticButton from './MagneticButton'
-import { isSoundEnabled, toggleSound, playSyntheticSound } from '../utils/soundFX'
+import {
+  isSoundEnabled,
+  toggleSound,
+  playSyntheticSound,
+  isMusicPlaying,
+  toggleMusic,
+  subscribeMusicState,
+} from '../utils/soundFX'
 
 const LINKS = [
   { id: 'work', label: 'Work (Universe)' },
@@ -18,6 +25,15 @@ export default function Nav({ reduced = false }) {
   const [progress, setProgress] = useState(0)
   const [open, setOpen] = useState(false)
   const [soundActive, setSoundActive] = useState(isSoundEnabled())
+  const [musicPlaying, setMusicPlaying] = useState(isMusicPlaying())
+
+  useEffect(() => {
+    const unsub = subscribeMusicState((playing) => {
+      setMusicPlaying(playing)
+      if (playing) setSoundActive(true)
+    })
+    return unsub
+  }, [])
 
   useEffect(() => {
     function onScroll() {
@@ -123,23 +139,43 @@ export default function Nav({ reduced = false }) {
 
           {/* Audio Toggle, Contact Action & Mobile Hamburger */}
           <div className="flex items-center gap-2.5 sm:gap-3">
-            {/* Audio Toggle Button */}
+            {/* Soundtrack Equalizer Player Button */}
             <button
               type="button"
               onClick={() => {
-                const nowOn = toggleSound()
-                setSoundActive(nowOn)
+                playSyntheticSound('click')
+                toggleMusic()
               }}
               onMouseEnter={() => playSyntheticSound('tick')}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full font-mono text-[10px] sm:text-[11px] border transition-all flex items-center gap-1.5 cursor-pointer ${
-                soundActive
-                  ? 'border-[#c8f53c] text-[#c8f53c] bg-[#c8f53c]/10 shadow-[0_0_12px_rgba(200,245,60,0.2)] font-semibold'
-                  : 'border-white/15 text-white/50 bg-white/5 hover:text-white/80 hover:border-white/30'
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full font-mono text-[10px] sm:text-[11px] border transition-all flex items-center gap-2 cursor-pointer ${
+                musicPlaying
+                  ? 'border-[#c8f53c] text-[#c8f53c] bg-[#c8f53c]/10 shadow-[0_0_14px_rgba(200,245,60,0.25)] font-semibold'
+                  : 'border-white/15 text-white/60 bg-white/5 hover:text-white/90 hover:border-white/30'
               }`}
-              title="Toggle Synthesized Audio Feedback"
+              title={musicPlaying ? 'Pause Background Soundtrack' : 'Play Looped Background Soundtrack'}
+              aria-label={musicPlaying ? 'Pause Soundtrack' : 'Play Soundtrack'}
             >
-              <span className="text-xs">{soundActive ? '♫' : '♪'}</span>
-              <span className="hidden md:inline">{soundActive ? 'AUDIO: ON' : 'AUDIO: OFF'}</span>
+              {/* Equalizer Bars */}
+              <span className="flex items-end gap-[2px] h-3 w-3.5" aria-hidden="true">
+                {musicPlaying ? (
+                  <>
+                    <span className="w-[2px] bg-[#c8f53c] rounded-full animate-music-bar-1" />
+                    <span className="w-[2px] bg-[#c8f53c] rounded-full animate-music-bar-2" />
+                    <span className="w-[2px] bg-[#c8f53c] rounded-full animate-music-bar-3" />
+                    <span className="w-[2px] bg-[#c8f53c] rounded-full animate-music-bar-4" />
+                  </>
+                ) : (
+                  <>
+                    <span className="w-[2px] h-1.5 bg-current rounded-full opacity-60" />
+                    <span className="w-[2px] h-3 bg-current rounded-full opacity-60" />
+                    <span className="w-[2px] h-2 bg-current rounded-full opacity-60" />
+                    <span className="w-[2px] h-1 bg-current rounded-full opacity-60" />
+                  </>
+                )}
+              </span>
+              <span className="hidden sm:inline tracking-wider">
+                {musicPlaying ? 'SOUNDTRACK: ON' : 'SOUNDTRACK: PLAY'}
+              </span>
             </button>
 
             <MagneticButton
@@ -205,6 +241,41 @@ export default function Nav({ reduced = false }) {
                   {l.label}
                 </motion.a>
               ))}
+            </div>
+
+            <div className="py-4 border-y border-white/10 flex items-center justify-between">
+              <span className="font-mono text-xs uppercase tracking-wider text-white/70">Soundtrack</span>
+              <button
+                type="button"
+                onClick={() => {
+                  playSyntheticSound('click')
+                  toggleMusic()
+                }}
+                className={`px-3 py-1.5 rounded-full font-mono text-xs border transition-all flex items-center gap-2 ${
+                  musicPlaying
+                    ? 'border-[#c8f53c] text-[#c8f53c] bg-[#c8f53c]/10 shadow-[0_0_12px_rgba(200,245,60,0.2)]'
+                    : 'border-white/20 text-white/60 bg-white/5'
+                }`}
+              >
+                <span className="flex items-end gap-[2px] h-3 w-3.5">
+                  {musicPlaying ? (
+                    <>
+                      <span className="w-[2px] bg-[#c8f53c] rounded-full animate-music-bar-1" />
+                      <span className="w-[2px] bg-[#c8f53c] rounded-full animate-music-bar-2" />
+                      <span className="w-[2px] bg-[#c8f53c] rounded-full animate-music-bar-3" />
+                      <span className="w-[2px] bg-[#c8f53c] rounded-full animate-music-bar-4" />
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-[2px] h-1.5 bg-current rounded-full opacity-60" />
+                      <span className="w-[2px] h-3 bg-current rounded-full opacity-60" />
+                      <span className="w-[2px] h-2 bg-current rounded-full opacity-60" />
+                      <span className="w-[2px] h-1 bg-current rounded-full opacity-60" />
+                    </>
+                  )}
+                </span>
+                <span>{musicPlaying ? 'PLAYING' : 'TAP TO PLAY'}</span>
+              </button>
             </div>
 
             <div className="font-mono text-xs text-white/40 space-y-1">

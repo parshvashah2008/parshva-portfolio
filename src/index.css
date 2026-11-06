@@ -170,6 +170,17 @@ html.lenis,html.lenis body{ height:auto; }
 }
 @keyframes cue{ 0%{ top:-20px; opacity:0 } 30%{ opacity:1 } 100%{ top:58px; opacity:0 } }
 
+/* ---------- soundtrack equalizer animation ---------- */
+@keyframes musicBar1 { 0%, 100% { height: 25%; } 50% { height: 100%; } }
+@keyframes musicBar2 { 0%, 100% { height: 85%; } 50% { height: 20%; } }
+@keyframes musicBar3 { 0%, 100% { height: 35%; } 50% { height: 95%; } }
+@keyframes musicBar4 { 0%, 100% { height: 90%; } 50% { height: 30%; } }
+
+.animate-music-bar-1 { animation: musicBar1 0.85s ease-in-out infinite; }
+.animate-music-bar-2 { animation: musicBar2 0.72s ease-in-out infinite 0.15s; }
+.animate-music-bar-3 { animation: musicBar3 0.95s ease-in-out infinite 0.3s; }
+.animate-music-bar-4 { animation: musicBar4 0.78s ease-in-out infinite 0.1s; }
+
 /* ---------- scrollbar ---------- */
 ::-webkit-scrollbar{ width:7px; }
 ::-webkit-scrollbar-track{ background:var(--bg); }
