@@ -76,29 +76,38 @@ export default function ContactSection() {
             </div>
 
             <div className="space-y-3">
-              {/* Email Card with Copy Feature */}
-              <div className="p-5 rounded-2xl bg-[#080d0a] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
-                <div className="space-y-0.5">
-                  <div className="font-mono text-[10px] text-[#a8a49a] uppercase font-semibold">Email Address</div>
+              {/* Email Card with Direct Action Suite */}
+              <div className="p-5 rounded-2xl bg-[#080d0a] border border-white/10 hover:border-white/20 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 group">
+                <div className="min-w-0 space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#c8f53c]" />
+                    <span className="font-mono text-[10px] text-[#a8a49a] uppercase font-semibold tracking-wider">
+                      Direct Email Dispatch
+                    </span>
+                  </div>
                   <a
                     href={`mailto:${contact.email}`}
-                    className="font-mono text-sm sm:text-base text-white group-hover:text-[#c8f53c] transition-colors"
+                    className="font-mono text-xs sm:text-sm md:text-[15px] text-white group-hover:text-[#c8f53c] transition-colors truncate block font-medium"
+                    title={contact.email}
                   >
                     {contact.email}
                   </a>
                 </div>
-                <div className="flex items-center gap-2">
+
+                <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
                   <button
                     onClick={copyEmail}
-                    className="px-3.5 py-1.5 rounded-full font-mono text-xs border border-white/15 bg-white/5 hover:bg-white/10 text-white transition-all shrink-0"
+                    type="button"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full font-mono text-xs border border-white/15 bg-white/5 hover:bg-white/15 active:scale-95 text-white/90 hover:text-white transition-all cursor-pointer"
                   >
-                    {copied ? '✓ Copied to clipboard' : 'Copy Email'}
+                    <span>{copied ? '✓ Copied' : 'Copy'}</span>
                   </button>
                   <a
                     href={`mailto:${contact.email}`}
-                    className="px-3.5 py-1.5 rounded-full font-mono text-xs border border-[#c8f53c]/30 bg-[#c8f53c]/10 text-[#c8f53c] hover:bg-[#c8f53c]/20 transition-all shrink-0"
+                    className="inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full font-mono text-xs font-semibold bg-[#c8f53c] text-black hover:bg-[#d8ff54] active:scale-95 transition-all shadow-sm cursor-pointer"
                   >
-                    Send Mail ↗
+                    <span>Send Mail</span>
+                    <span className="text-xs">↗</span>
                   </a>
                 </div>
               </div>
