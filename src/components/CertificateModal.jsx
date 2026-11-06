@@ -9,6 +9,7 @@ export default function CertificateModal({
   hasMultiple = false,
 }) {
   useEffect(() => {
+    if (!certificate) return undefined
     function onKeyDown(e) {
       if (e.key === 'Escape') onClose()
       if (e.key === 'ArrowRight' && onNext) onNext()
@@ -22,7 +23,7 @@ export default function CertificateModal({
       document.body.style.overflow = ''
       window.__lenis?.start()
     }
-  }, [onClose, onNext, onPrev])
+  }, [certificate, onClose, onNext, onPrev])
 
   if (!certificate) return null
 

@@ -41,6 +41,17 @@ export default function App() {
   useDepth3D(reduced, !loading)
 
   useEffect(() => {
+    // Prevent browser auto-restoring scroll to middle of page
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual'
+    }
+    // If opening without a specific #hash anchor, always start at Home (0, 0)
+    if (!window.location.hash) {
+      window.scrollTo(0, 0)
+    }
+  }, [])
+
+  useEffect(() => {
     if (loading) return undefined
     const t = setTimeout(() => ScrollTrigger.refresh(), 260)
     return () => clearTimeout(t)

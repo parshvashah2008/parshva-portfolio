@@ -90,11 +90,14 @@ export default function ParshvaCLI() {
   const [inputVal, setInputVal] = useState('')
   const [cmdHistory, setCmdHistory] = useState([])
   const [historyIdx, setHistoryIdx] = useState(-1)
-  const bottomRef = useRef(null)
+  const terminalBodyRef = useRef(null)
   const inputRef = useRef(null)
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    // Scroll only the terminal inner box down, never the whole page window
+    if (terminalBodyRef.current) {
+      terminalBodyRef.current.scrollTop = terminalBodyRef.current.scrollHeight
+    }
   }, [history])
 
   function handleCommand(cmdRaw) {
@@ -175,6 +178,7 @@ export default function ParshvaCLI() {
 
       {/* Terminal Body */}
       <div
+        ref={terminalBodyRef}
         className="p-4 sm:p-6 overflow-y-auto overscroll-contain max-h-[380px] space-y-3 font-mono leading-relaxed text-[#d4d1c9]"
         data-lenis-prevent="true"
       >
@@ -211,7 +215,6 @@ export default function ParshvaCLI() {
             spellCheck="false"
           />
         </div>
-        <div ref={bottomRef} />
       </div>
 
       {/* Terminal Footer Quick Suggestions */}
