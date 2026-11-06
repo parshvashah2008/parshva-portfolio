@@ -4,6 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useReducedMotion, useIsLowPower } from './hooks/useReducedMotion'
 import { useLenis } from './hooks/useLenis'
 import { useDepth3D } from './hooks/useDepth3D'
+import { playMusic } from './utils/soundFX'
 
 // Supporting UI & Spatial Infrastructure
 import Loader from './components/Loader'
@@ -61,7 +62,7 @@ export default function App() {
     <>
       <CustomCursor reduced={reduced} />
       <FilmGrainOverlay reduced={reduced} />
-      <Loader reduced={reduced} onDone={() => setLoading(false)} />
+      <Loader reduced={reduced} onDone={() => { setLoading(false); playMusic(); }} />
       <Backdrop reduced={reduced} />
       <Nav reduced={reduced} />
       <FloatRail />

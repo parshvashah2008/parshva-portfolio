@@ -53,8 +53,8 @@ export default function ContactSection() {
             </span>
           </div>
 
-          <h2 className="font-serif text-4xl sm:text-6xl md:text-7xl text-[#f4f1ea] font-normal leading-[1.02] tracking-tight">
-            Have something <span className="italic font-serif text-[#c8f53c]">interesting in mind?</span>
+          <h2 className="font-serif text-4xl sm:text-6xl md:text-7xl text-[#f4f1ea] font-medium sm:font-semibold leading-[1.02] tracking-tight">
+            Have something <span className="italic font-serif font-normal text-[#c8f53c]">interesting in mind?</span>
           </h2>
 
           <p className="text-[#a8a49a] text-base sm:text-lg font-sans max-w-2xl leading-relaxed pt-2">

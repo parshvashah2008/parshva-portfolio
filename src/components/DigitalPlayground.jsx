@@ -346,8 +346,8 @@ export default function DigitalPlayground({ reduced = false }) {
                 07 — Experiments / Digital Laboratory
               </span>
             </div>
-            <h2 className="font-serif text-3xl sm:text-5xl md:text-6xl text-[#f4f1ea] font-normal leading-[1.05] tracking-tight">
-              Computational <span className="italic font-serif text-[#a8a49a]">Playground</span>
+            <h2 className="font-serif text-3xl sm:text-5xl md:text-6xl text-[#f4f1ea] font-medium sm:font-semibold leading-[1.05] tracking-tight">
+              Computational <span className="italic font-serif font-normal text-[#c8f53c]">Playground</span>
             </h2>
             <p className="text-[#a8a49a] text-xs sm:text-sm font-sans mt-2 max-w-xl">
               An exploratory laboratory for creative coding, vector particle physics, real-time audio synthesis, and interactive browser mechanics.

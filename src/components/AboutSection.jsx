@@ -22,8 +22,8 @@ export default function AboutSection() {
                 04 — Visual Persona &amp; Manifesto
               </span>
             </div>
-            <h2 className="font-serif text-4xl sm:text-6xl md:text-7xl text-[#f4f1ea] font-normal leading-[0.98] tracking-tight">
-              The Mind &amp; <span className="italic font-serif text-[#a8a49a]">The Craft</span>
+            <h2 className="font-serif text-4xl sm:text-6xl md:text-7xl text-[#f4f1ea] font-medium sm:font-semibold leading-[0.98] tracking-tight">
+              The Mind &amp; <span className="italic font-serif font-normal text-[#c8f53c]">The Craft</span>
             </h2>
           </div>
 

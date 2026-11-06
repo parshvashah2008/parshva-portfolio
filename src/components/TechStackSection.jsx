@@ -23,8 +23,8 @@ export default function TechStackSection({ reduced = false }) {
                 06 — Tech Stack &amp; Capabilities
               </span>
             </div>
-            <h2 className="font-serif text-3xl sm:text-5xl md:text-6xl text-[#f4f1ea] font-normal leading-[1.05] tracking-tight">
-              Systems Architecture &amp; <span className="italic font-serif text-[#a8a49a]">Toolkit</span>
+            <h2 className="font-serif text-3xl sm:text-5xl md:text-6xl text-[#f4f1ea] font-medium sm:font-semibold leading-[1.05] tracking-tight">
+              Systems Architecture &amp; <span className="italic font-serif font-normal text-[#c8f53c]">Toolkit</span>
             </h2>
             <p className="text-[#a8a49a] text-xs sm:text-sm font-sans mt-2 max-w-xl">
               Organized honestly according to real production proficiency across systems engineering, applied AI, full-stack web, and product design.

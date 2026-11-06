@@ -19,10 +19,10 @@ function getAudioContext() {
   return audioCtx
 }
 
-// Global sound effects state
-let soundEnabled = false
+// Global sound effects state (default ON)
+let soundEnabled = true
 if (typeof window !== 'undefined') {
-  soundEnabled = localStorage.getItem('parshva_sound_enabled') === 'true'
+  soundEnabled = localStorage.getItem('parshva_sound_enabled') !== 'false'
 }
 
 export function isSoundEnabled() {
@@ -53,6 +53,12 @@ let musicPlaying = false
 let fadeInterval = null
 const musicListeners = new Set()
 
+// Default music preference is ON unless user explicitly paused it
+let musicWanted = true
+if (typeof window !== 'undefined') {
+  musicWanted = localStorage.getItem('parshva_music_playing') !== 'false'
+}
+
 function getMusicAudio() {
   if (typeof window === 'undefined') return null
   if (!bgMusic) {
@@ -62,7 +68,7 @@ function getMusicAudio() {
     bgMusic = new Audio(audioUrl)
     bgMusic.loop = true
     bgMusic.preload = 'auto'
-    bgMusic.volume = 0.5
+    bgMusic.volume = 0.45
     bgMusic.addEventListener('ended', () => {
       bgMusic.currentTime = 0
       bgMusic.play().catch(() => {})
@@ -72,7 +78,7 @@ function getMusicAudio() {
 }
 
 export function isMusicPlaying() {
-  return musicPlaying
+  return musicPlaying || (typeof window !== 'undefined' && musicWanted)
 }
 
 export function subscribeMusicState(callback) {
@@ -101,6 +107,7 @@ export function playMusic() {
 
   getAudioContext()
   soundEnabled = true
+  musicWanted = true
 
   audio.volume = 0
   const playPromise = audio.play()
@@ -127,13 +134,12 @@ export function playMusic() {
           } else {
             audio.volume = Math.min(vol, targetVol)
           }
-        }, 60)
+        }, 50)
         return true
       })
       .catch((err) => {
-        console.warn('Autoplay prevented or audio playback error:', err)
-        musicPlaying = false
-        notifyMusicState()
+        // Autoplay policy prevented immediate unmuted playback; will start on first user gesture
+        console.info('Autoplay waiting for initial user interaction:', err?.name)
         return false
       })
   }
@@ -142,7 +148,16 @@ export function playMusic() {
 
 export function pauseMusic() {
   const audio = getMusicAudio()
-  if (!audio) return
+  musicWanted = false
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('parshva_music_playing', 'false')
+  }
+
+  if (!audio) {
+    musicPlaying = false
+    notifyMusicState()
+    return
+  }
 
   if (fadeInterval) {
     clearInterval(fadeInterval)
@@ -159,9 +174,6 @@ export function pauseMusic() {
       musicPlaying = false
       clearInterval(fadeInterval)
       fadeInterval = null
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('parshva_music_playing', 'false')
-      }
       notifyMusicState()
     } else {
       audio.volume = Math.max(0, vol)
@@ -179,17 +191,24 @@ export function toggleMusic() {
   }
 }
 
-// Global one-time gesture auto-resume if user previously enabled music
+// Global auto-start on page load + seamless fallback on very first user gesture
 if (typeof window !== 'undefined') {
-  const resumeMusicOnGesture = () => {
-    if (localStorage.getItem('parshva_music_playing') === 'true' && !musicPlaying) {
+  // Attempt to play immediately on load
+  if (musicWanted) {
+    playMusic().catch(() => {})
+  }
+
+  // Ensure playback starts on the very first touch / click / scroll / keydown
+  const startMusicOnFirstInteraction = () => {
+    if (musicWanted && !musicPlaying) {
       playMusic()
     }
-    window.removeEventListener('click', resumeMusicOnGesture)
-    window.removeEventListener('keydown', resumeMusicOnGesture)
+    const events = ['pointerdown', 'click', 'keydown', 'touchstart', 'scroll']
+    events.forEach((ev) => window.removeEventListener(ev, startMusicOnFirstInteraction))
   }
-  window.addEventListener('click', resumeMusicOnGesture, { once: true })
-  window.addEventListener('keydown', resumeMusicOnGesture, { once: true })
+
+  const events = ['pointerdown', 'click', 'keydown', 'touchstart', 'scroll']
+  events.forEach((ev) => window.addEventListener(ev, startMusicOnFirstInteraction, { passive: true, once: true }))
 }
 
 export function playSyntheticSound(type = 'tick') {
