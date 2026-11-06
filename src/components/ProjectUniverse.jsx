@@ -183,16 +183,17 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
             onDistanceChange={handleDistanceChange}
           />
 
-          {/* Top Control Hint (Hidden on very small screens to avoid clutter) */}
-          <div className="pointer-events-none absolute top-4 inset-x-0 justify-center z-10 hidden md:flex">
-            <div className="px-3.5 py-1.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-md font-mono text-[11px] text-white/60">
-              Drag to orbit · Scroll or drag Neon Scroll Bar to zoom · Click node to explore
+          {/* Top Control Hint (Positioned left-side on larger screens) */}
+          <div className="pointer-events-none absolute top-4 left-4 sm:left-8 lg:left-12 z-20 hidden md:flex">
+            <div className="px-3.5 py-1.5 rounded-full bg-black/70 border border-white/10 backdrop-blur-md font-mono text-[11px] text-white/60 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-white/40" />
+              <span>Drag to orbit celestial sphere</span>
             </div>
           </div>
 
-          {/* Spatial Neon Zoom Scroll Bar HUD */}
-          <div className="absolute top-4 right-3 sm:top-4 sm:right-6 z-30 pointer-events-auto">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#070c09]/95 border border-[#c8f53c]/40 backdrop-blur-2xl shadow-[0_0_24px_rgba(200,245,60,0.22)]">
+          {/* Spatial Neon Zoom Scroll Bar HUD (Cleared from right-side floating social rail) */}
+          <div className="absolute top-4 right-3 sm:top-4 sm:right-16 lg:right-20 z-30 pointer-events-auto">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#070c09]/95 border border-[#c8f53c]/45 backdrop-blur-2xl shadow-[0_0_24px_rgba(200,245,60,0.22)]">
               {/* Reticle / Target indicator */}
               <div className="flex items-center gap-1.5 pr-2 border-r border-white/15">
                 <span className="w-2 h-2 rounded-full bg-[#c8f53c] shadow-[0_0_8px_#c8f53c] animate-pulse" />
