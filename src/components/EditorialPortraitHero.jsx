@@ -43,6 +43,25 @@ export default function EditorialPortraitHero({ reduced = false }) {
   const [isHovered, setIsHovered] = useState(false)
   const containerRef = useRef(null)
 
+  // Preload all portrait images so transitions are instant with zero flash
+  useEffect(() => {
+    PORTRAITS.forEach((p) => {
+      const img = new Image()
+      img.src = p.src
+    })
+  }, [])
+
+  // 1-second auto carousel: changes picture directly every 1000ms
+  useEffect(() => {
+    if (reduced) return undefined
+
+    const timer = setInterval(() => {
+      setActiveIdx((prev) => (prev + 1) % PORTRAITS.length)
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [activeIdx, reduced])
+
   const active = PORTRAITS[activeIdx]
 
   // Subtle interactive 3D tilt
@@ -59,7 +78,7 @@ export default function EditorialPortraitHero({ reduced = false }) {
     setIsHovered(false)
   }
 
-  // Keyboard and click navigation
+  // Keyboard and manual click navigation
   const nextPerspective = () => {
     playSyntheticSound('shutter')
     setActiveIdx((prev) => (prev + 1) % PORTRAITS.length)
@@ -87,14 +106,14 @@ export default function EditorialPortraitHero({ reduced = false }) {
         }}
         className="relative h-[48vh] sm:h-[56vh] lg:h-[66vh] w-full rounded-3xl overflow-hidden border border-white/[0.12] bg-[#060807] shadow-[0_24px_80px_rgba(0,0,0,0.8)] select-none group"
       >
-        {/* Photo Canvas with crossfade */}
-        <AnimatePresence mode="wait">
+        {/* Photo Canvas with direct snappy crossfade */}
+        <AnimatePresence initial={false}>
           <motion.div
             key={active.id}
-            initial={{ opacity: 0, scale: 1.04 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            transition={{ duration: 0.55, ease: EASE }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
             className="absolute inset-0 w-full h-full"
           >
             <img
@@ -129,11 +148,9 @@ export default function EditorialPortraitHero({ reduced = false }) {
             <span>+</span>
           </div>
 
-          {/* Bottom Card Title & Narrative */}
+          {/* Bottom Card Title & Narrative (Consistent height across slides) */}
           <div className="space-y-2 pointer-events-auto">
-            <div className={`rounded-2xl bg-black/75 backdrop-blur-xl border border-white/10 shadow-2xl transition-all ${
-              active.id === 'jersey' ? 'p-3 sm:p-3.5 space-y-1' : 'p-4 sm:p-5 space-y-1.5'
-            }`}>
+            <div className="rounded-2xl bg-black/75 backdrop-blur-xl border border-white/10 shadow-2xl p-4 sm:p-5 space-y-1.5 transition-all">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[#c8f53c]">
                   {active.tag}
@@ -145,11 +162,9 @@ export default function EditorialPortraitHero({ reduced = false }) {
                 {active.title}
               </div>
 
-              {active.id !== 'jersey' && (
-                <p className="text-xs text-white/80 font-sans line-clamp-2 leading-relaxed">
-                  {active.caption}
-                </p>
-              )}
+              <p className="text-xs text-white/80 font-sans line-clamp-2 leading-relaxed">
+                {active.caption}
+              </p>
             </div>
           </div>
         </div>
