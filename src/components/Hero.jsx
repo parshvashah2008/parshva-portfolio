@@ -4,15 +4,18 @@ import EditorialPortraitHero from './EditorialPortraitHero'
 import MagneticButton from './MagneticButton'
 import { projects } from '../data/projects'
 import { forageCertifications, anthropicCertifications } from '../data/certifications'
+import { useGitHubStats } from '../utils/githubStats'
 
 const EASE = [0.16, 1, 0.3, 1]
 
 export default function Hero({ reduced = false }) {
   const [activeStat, setActiveStat] = useState(0)
+  const ghStats = useGitHubStats()
 
   const stats = [
     { n: String(projects.length), l: 'Verified Projects Shipped' },
     { n: String(anthropicCertifications.length), l: 'Anthropic Claude Certifications' },
+    { n: String(ghStats.publicRepos), l: 'Public Production Repositories' },
     { n: String(forageCertifications.length), l: 'Forage Industry Simulations' },
   ]
 
@@ -158,11 +161,25 @@ export default function Hero({ reduced = false }) {
           <div className="flex flex-col gap-1.5">
             <span className="text-[#a8a49a] uppercase tracking-widest text-[10px] font-semibold flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#c8f53c] animate-pulse" />
-              Live Activity Status
+              Live Activity Radar {ghStats.isLive && <span className="text-[9px] text-[#c8f53c] font-mono">(API LIVE)</span>}
             </span>
             <span className="text-white/90 font-sans text-xs flex items-center gap-2">
               <span className="text-[#c8f53c] font-mono">●</span>
-              <span>Active Builder · Pushing code to GitHub (@parshvashah2008)</span>
+              <a
+                href={ghStats.profileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-[#c8f53c] transition-colors inline-flex items-center gap-1.5 group"
+                title="View GitHub Profile (@parshvashah2008)"
+              >
+                <span className="underline decoration-white/20 underline-offset-2 group-hover:decoration-[#c8f53c]">
+                  {ghStats.statusText}
+                </span>
+                <span className="font-mono text-[9px] text-[#c8f53c] bg-[#c8f53c]/10 px-1.5 py-0.5 rounded border border-[#c8f53c]/20">
+                  {ghStats.publicRepos} Repos
+                </span>
+                <span className="text-[10px] text-white/50 group-hover:text-[#c8f53c]">↗</span>
+              </a>
             </span>
           </div>
 

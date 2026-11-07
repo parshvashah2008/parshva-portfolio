@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import ProjectThumbnail from './ProjectThumbnail'
+import ArchitectureVisualizer from './ArchitectureVisualizer'
 import { projects } from '../data/projects'
 import { playSyntheticSound } from '../utils/soundFX'
 
@@ -209,40 +210,7 @@ export default function CaseStudyModal({ project, onClose, onSelectNext }) {
             </div>
 
             {s.architecture && (
-              <div className="p-6 sm:p-8 rounded-2xl bg-[#070d0a] border border-[#c8f53c]/20 space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <span className="font-mono text-xs uppercase tracking-widest text-[#c8f53c]">
-                    07 — Architecture &amp; Technical Decisions
-                  </span>
-                  <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#c8f53c]/10 text-[#c8f53c] border border-[#c8f53c]/20">
-                    {s.architecture.pattern}
-                  </span>
-                </div>
-
-                <div className="text-sm text-white/80 leading-relaxed font-mono whitespace-pre-line bg-black/40 p-4 rounded-xl border border-white/5">
-                  {s.architecture.description}
-                </div>
-
-                {s.architecture.flow && (
-                  <div className="space-y-2">
-                    <div className="text-xs font-mono text-white/50 uppercase tracking-wider">
-                      Execution Pipeline
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {s.architecture.flow.map((step, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <span className="px-2.5 py-1 rounded bg-white/5 border border-white/10 text-xs font-mono text-white/80">
-                            {idx + 1}. {step}
-                          </span>
-                          {idx < s.architecture.flow.length - 1 && (
-                            <span className="text-white/30 text-xs">→</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <ArchitectureVisualizer project={project} />
             )}
           </section>
 
