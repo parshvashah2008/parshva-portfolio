@@ -76,29 +76,7 @@ function ProjectSpatialNode({
       floatIntensity={reduced ? 0 : 0.8}
       position={position}
     >
-      <group>
-        {/* Core glowing orb */}
-        <mesh
-          ref={meshRef}
-          onClick={(e) => {
-            e.stopPropagation()
-            onSelect(project)
-          }}
-          onPointerOver={(e) => {
-            e.stopPropagation()
-            onHover(project)
-          }}
-          onPointerOut={() => onHover(null)}
-          scale={isSelected ? 1.5 : isHovered ? 1.25 : 1}
-        >
-          <octahedronGeometry args={[0.22, 0]} />
-          <meshStandardMaterial
-            color={project.color}
-            emissive={project.color}
-            emissiveIntensity={isSelected ? 1.4 : isHovered ? 1.0 : 0.6}
-            wireframe
-          />
-        </mesh>
+      <group ref={meshRef}>
 
         {/* Ambient halo glow */}
         <pointLight
