@@ -102,8 +102,8 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
                 02 — The Work / Project Universe
               </span>
             </div>
-            <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#f4f1ea] font-normal tracking-tight">
-              An Interactive <span className="italic font-serif text-[#c8f53c]">Digital Universe</span>
+            <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl text-[#f4f1ea] font-normal leading-[0.96] tracking-[-0.025em]">
+              An Interactive <span className="italic font-serif text-[#a8a49a]">Digital Universe</span>
             </h2>
             <p className="text-[#a8a49a] text-xs sm:text-sm font-sans mt-2 max-w-xl">
               Explore my software engineering projects, production SaaS engines, AI tools, and creative experiments floating in 3D spatial orbit.

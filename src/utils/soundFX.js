@@ -53,10 +53,11 @@ let musicPlaying = false
 let fadeInterval = null
 const musicListeners = new Set()
 
-// Default music preference is ON unless user explicitly paused it
+// Per user instruction: soundtrack must ALWAYS play on launch, never start paused
 let musicWanted = true
 if (typeof window !== 'undefined') {
-  musicWanted = localStorage.getItem('parshva_music_playing') !== 'false'
+  localStorage.removeItem('parshva_music_playing')
+  sessionStorage.removeItem('parshva_soundtrack_paused')
 }
 
 function getMusicAudio() {
@@ -78,18 +79,22 @@ function getMusicAudio() {
 }
 
 export function isMusicPlaying() {
-  return musicPlaying || (typeof window !== 'undefined' && musicWanted)
+  return musicPlaying || musicWanted
 }
 
 export function subscribeMusicState(callback) {
   musicListeners.add(callback)
+  try {
+    callback(isMusicPlaying())
+  } catch (e) {}
   return () => musicListeners.delete(callback)
 }
 
 function notifyMusicState() {
+  const state = isMusicPlaying()
   musicListeners.forEach((fn) => {
     try {
-      fn(musicPlaying)
+      fn(state)
     } catch (e) {
       console.warn('Music listener error:', e)
     }
@@ -105,9 +110,13 @@ export function playMusic() {
     fadeInterval = null
   }
 
-  getAudioContext()
-  soundEnabled = true
   musicWanted = true
+  notifyMusicState()
+
+  const targetVol = 0.45
+  if (musicPlaying && audio.volume > 0.3 && !audio.paused) {
+    return Promise.resolve(true)
+  }
 
   audio.volume = 0
   const playPromise = audio.play()
@@ -116,15 +125,11 @@ export function playMusic() {
     return playPromise
       .then(() => {
         musicPlaying = true
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('parshva_music_playing', 'true')
-          localStorage.setItem('parshva_sound_enabled', 'true')
-        }
+        soundEnabled = true
         notifyMusicState()
 
         // Smooth volume fade-in
         let vol = 0
-        const targetVol = 0.45
         fadeInterval = setInterval(() => {
           vol += 0.05
           if (vol >= targetVol) {
@@ -134,12 +139,11 @@ export function playMusic() {
           } else {
             audio.volume = Math.min(vol, targetVol)
           }
-        }, 50)
+        }, 40)
         return true
       })
       .catch((err) => {
         // Autoplay policy prevented immediate unmuted playback; will start on first user gesture
-        console.info('Autoplay waiting for initial user interaction:', err?.name)
         return false
       })
   }
@@ -149,9 +153,6 @@ export function playMusic() {
 export function pauseMusic() {
   const audio = getMusicAudio()
   musicWanted = false
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('parshva_music_playing', 'false')
-  }
 
   if (!audio) {
     musicPlaying = false
@@ -194,21 +195,33 @@ export function toggleMusic() {
 // Global auto-start on page load + seamless fallback on very first user gesture
 if (typeof window !== 'undefined') {
   // Attempt to play immediately on load
-  if (musicWanted) {
-    playMusic().catch(() => {})
-  }
-
-  // Ensure playback starts on the very first touch / click / scroll / keydown
-  const startMusicOnFirstInteraction = () => {
-    if (musicWanted && !musicPlaying) {
-      playMusic()
+  const startImmediately = () => {
+    if (musicWanted) {
+      playMusic().catch(() => {})
     }
-    const events = ['pointerdown', 'click', 'keydown', 'touchstart', 'scroll']
-    events.forEach((ev) => window.removeEventListener(ev, startMusicOnFirstInteraction))
   }
 
-  const events = ['pointerdown', 'click', 'keydown', 'touchstart', 'scroll']
-  events.forEach((ev) => window.addEventListener(ev, startMusicOnFirstInteraction, { passive: true, once: true }))
+  if (document.readyState === 'complete') {
+    startImmediately()
+  } else {
+    window.addEventListener('load', startImmediately, { once: true })
+  }
+
+  // Ensure playback starts on the very first user interaction anywhere on page
+  const unlockEvents = ['pointerdown', 'mousedown', 'click', 'keydown', 'touchstart']
+  const unlockAudio = () => {
+    if (musicWanted) {
+      playMusic().then((started) => {
+        if (started) {
+          unlockEvents.forEach((ev) => window.removeEventListener(ev, unlockAudio))
+        }
+      }).catch(() => {})
+    }
+  }
+
+  unlockEvents.forEach((ev) => {
+    window.addEventListener(ev, unlockAudio, { passive: true })
+  })
 }
 
 export function playSyntheticSound(type = 'tick') {

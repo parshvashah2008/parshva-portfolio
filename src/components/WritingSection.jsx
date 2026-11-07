@@ -35,8 +35,8 @@ export default function WritingSection() {
               08 — Writing &amp; Field Notes
             </span>
           </div>
-          <h2 className="font-serif text-3xl sm:text-5xl md:text-6xl text-[#f4f1ea] font-medium sm:font-semibold leading-[1.05] tracking-tight">
-            Architectural <span className="italic font-serif font-normal text-[#c8f53c]">Essays</span>
+          <h2 className="font-serif text-3xl sm:text-5xl md:text-6xl text-[#f4f1ea] font-normal leading-[0.96] tracking-[-0.025em]">
+            Architectural <span className="italic font-serif text-[#a8a49a]">Essays</span>
           </h2>
           <p className="text-[#a8a49a] text-xs sm:text-sm font-sans mt-2">
             Technical breakdowns, systems reflections, and lessons learned from shipping production AI and web software.

@@ -114,8 +114,8 @@ export default function ExperienceSection() {
                 05 — Experience &amp; Achievements
               </span>
             </div>
-            <h2 className="font-serif text-3xl sm:text-5xl md:text-6xl text-[#f4f1ea] font-medium sm:font-semibold leading-[1.05] tracking-tight">
-              Curiosity In <span className="italic font-serif font-normal text-[#c8f53c]">Execution</span>
+            <h2 className="font-serif text-3xl sm:text-5xl md:text-6xl text-[#f4f1ea] font-normal leading-[0.96] tracking-[-0.025em]">
+              Curiosity In <span className="italic font-serif text-[#a8a49a]">Execution</span>
             </h2>
             <p className="text-[#a8a49a] text-xs sm:text-sm font-sans mt-2 max-w-xl">
               An honest, verifiable record of academic studies, independent engineering practice, and professional technical certificates with original documents.

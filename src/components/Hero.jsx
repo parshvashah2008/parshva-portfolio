@@ -65,16 +65,16 @@ export default function Hero({ reduced = false }) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: EASE, delay: 0.1 }}
-              className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-medium sm:font-semibold leading-[0.92] tracking-tight text-[#f4f1ea]"
+              className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-normal leading-[0.92] tracking-[-0.03em] text-[#f4f1ea]"
             >
-              Parshva <span className="italic font-serif font-normal text-[#c8f53c]">Shah</span>
+              Parshva <span className="italic font-serif text-[#a8a49a]">Shah</span>
             </motion.h1>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, ease: EASE, delay: 0.2 }}
-              className="font-serif text-2xl sm:text-3xl md:text-4xl text-[#f4f1ea]/90 font-normal leading-snug"
+              className="font-serif text-2xl sm:text-3xl md:text-4xl text-[#f4f1ea]/90 font-normal leading-[1.18] tracking-[-0.015em]"
             >
               "Building things that make the digital world more interesting."
             </motion.div>
