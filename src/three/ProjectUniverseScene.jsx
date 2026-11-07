@@ -10,25 +10,26 @@ import { playSyntheticSound } from '../utils/soundFX'
  * Distributes all 8 projects across two spacious tiers:
  * - Lower Tier (Slots 0, 1, 2): 3 prominent foreground cards (Center Hero, Left, Right)
  * - Upper Tier (Slots 3, 4, 5, 6, 7): 5 cards arched gracefully in the celestial sky
- * Every card has dedicated line-of-sight with zero occlusion and clear visibility!
+ * Calibrated vertical elevation guarantees clean clearance above the bottom dock bar,
+ * and wide horizontal intervals guarantee zero occlusion between any adjacent cards!
  */
 const SLOT_POSITIONS = [
-  // 0: Center Hero (Selected focal project)
-  [0, -0.12, 2.2],
+  // 0: Center Hero (Selected focal project spotlight - elevated safely above bottom HUD dock)
+  [0, 1.05, 2.3],
   // 1: Front Left
-  [-2.85, -0.12, 1.8],
+  [-3.5, 1.05, 1.7],
   // 2: Front Right
-  [2.85, -0.12, 1.8],
+  [3.5, 1.05, 1.7],
   // 3: Upper Far Left
-  [-5.2, 1.15, -0.8],
+  [-5.9, 2.75, -0.6],
   // 4: Upper Mid Left
-  [-2.6, 1.25, -1.3],
+  [-2.95, 2.85, -1.0],
   // 5: Upper Center
-  [0, 1.35, -1.6],
+  [0, 2.95, -1.3],
   // 6: Upper Mid Right
-  [2.6, 1.25, -1.3],
+  [2.95, 2.85, -1.0],
   // 7: Upper Far Right
-  [5.2, 1.15, -0.8],
+  [5.9, 2.75, -0.6],
 ]
 
 /**
@@ -355,7 +356,7 @@ function CameraZoomBridge({ targetDistance, controlsRef }) {
     const controls = controlsRef.current
     if (!controls || targetDistance == null) return
 
-    const target = controls.target || new THREE.Vector3(0, 0.58, 0)
+    const target = controls.target || new THREE.Vector3(0, 1.85, 0)
     const offset = new THREE.Vector3().subVectors(camera.position, target)
     const currentDist = offset.length()
 
@@ -449,7 +450,7 @@ export default function ProjectUniverseScene({
 
   return (
     <Canvas
-      camera={{ position: [0, 0.58, 11.4], fov: 41 }}
+      camera={{ position: [0, 1.85, 12.4], fov: 42 }}
       dpr={[1, 1.8]}
       gl={{ antialias: true, alpha: true }}
       className="w-full h-full cursor-grab active:cursor-grabbing"
@@ -489,6 +490,7 @@ export default function ProjectUniverseScene({
         />
 
         {/* Orbit / Pan controls with smooth wheel & pinch zoom enabled */}
+        {/* Constrained azimuth & polar angles provide breathtaking 3D parallax without ever flipping cards sideways or backwards */}
         <OrbitControls
           ref={controlsRef}
           enableDamping
@@ -496,11 +498,13 @@ export default function ProjectUniverseScene({
           rotateSpeed={0.65}
           enableZoom={true}
           zoomSpeed={0.8}
-          minDistance={5.0}
-          maxDistance={15.0}
-          maxPolarAngle={Math.PI / 1.85}
-          minPolarAngle={Math.PI / 3.4}
-          target={[0, 0.58, 0]}
+          minDistance={5.5}
+          maxDistance={15.5}
+          minAzimuthAngle={-Math.PI / 4.2}
+          maxAzimuthAngle={Math.PI / 4.2}
+          minPolarAngle={Math.PI / 2.7}
+          maxPolarAngle={Math.PI / 2.08}
+          target={[0, 1.85, 0]}
         />
 
         {/* Dynamic Bidirectional Zoom Bridge */}

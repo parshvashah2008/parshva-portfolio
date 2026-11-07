@@ -32,6 +32,7 @@ function InvertibleHeroTypography({ reduced }) {
 
     // Active trail stamps for smooth multi-point fluid mask
     const stamps = []
+    let currentPointer = null
     let lastX = -1000
     let lastY = -1000
     let lastTime = performance.now()
@@ -42,26 +43,44 @@ function InvertibleHeroTypography({ reduced }) {
       const x = clientX - rect.left
       const y = clientY - rect.top
 
+      // Proximity check: is the pointer within or near the text container?
+      const isNearby =
+        x >= -180 &&
+        x <= rect.width + 180 &&
+        y >= -180 &&
+        y <= rect.height + 180
+
       const dx = x - lastX
       const dy = y - lastY
       const dist = Math.hypot(dx, dy)
-      lastX = x
-      lastY = y
 
-      // Stamp radius dynamically expands with pointer velocity to mirror the fluid splat (185px - 280px)
-      const radius = Math.min(280, 185 + dist * 1.6)
+      if (isNearby) {
+        currentPointer = {
+          x,
+          y,
+          r: Math.min(320, 200 + dist * 1.6),
+          alpha: 1.0,
+        }
+      } else {
+        currentPointer = null
+      }
 
-      stamps.push({
-        x,
-        y,
-        r: radius,
-        alpha: 1.0,
-        decay: 0.92, // Smooth dissipation over ~1.1s matching the fluid dissipation
-      })
+      // Add a trail stamp when movement occurs near the typography
+      if (isNearby && dist > 12) {
+        lastX = x
+        lastY = y
 
-      // Retain the most recent active stamps
-      if (stamps.length > 10) {
-        stamps.splice(0, stamps.length - 10)
+        stamps.push({
+          x,
+          y,
+          r: Math.min(300, 190 + dist * 1.5),
+          alpha: 1.0,
+          decay: 0.35, // Smooth decay over ~2.8s matching fluid dissipation
+        })
+
+        if (stamps.length > 25) {
+          stamps.shift()
+        }
       }
     }
 
@@ -69,46 +88,54 @@ function InvertibleHeroTypography({ reduced }) {
       handlePointer(e.clientX, e.clientY)
     }
 
+    const onPointerLeave = () => {
+      currentPointer = null
+    }
+
     window.addEventListener('pointermove', onPointerMove, { passive: true })
+    document.addEventListener('mouseleave', onPointerLeave)
 
     function loop(now) {
       rafId = requestAnimationFrame(loop)
       const dt = Math.min((now - lastTime) / 1000, 0.05)
       lastTime = now
 
-      if (stamps.length === 0) {
+      // Decay existing trail stamps
+      for (let i = stamps.length - 1; i >= 0; i--) {
+        stamps[i].alpha -= dt * stamps[i].decay
+        stamps[i].r += dt * 24
+        if (stamps[i].alpha <= 0.02) {
+          stamps.splice(i, 1)
+        }
+      }
+
+      // Combine active cursor point + trail stamps
+      const allPoints = []
+      if (currentPointer) {
+        allPoints.push(currentPointer)
+      }
+      stamps.forEach((s) => allPoints.push(s))
+
+      if (allPoints.length === 0) {
         if (overlay.style.opacity !== '0') {
           overlay.style.opacity = '0'
         }
         return
       }
 
-      for (let i = stamps.length - 1; i >= 0; i--) {
-        stamps[i].alpha -= dt * stamps[i].decay
-        stamps[i].r += dt * 32
-        if (stamps[i].alpha <= 0.02) {
-          stamps.splice(i, 1)
-        }
-      }
-
-      if (stamps.length === 0) {
-        overlay.style.opacity = '0'
-        return
-      }
-
       // Build composite CSS radial gradient mask
-      const gradients = stamps.map((s) => {
-        const a = Math.min(1.0, s.alpha).toFixed(3)
-        const aMid = (s.alpha * 0.72).toFixed(3)
-        const r = Math.round(s.r)
-        const rx = Math.round(s.x)
-        const ry = Math.round(s.y)
-        return `radial-gradient(circle ${r}px at ${rx}px ${ry}px, rgba(0,0,0,${a}) 0%, rgba(0,0,0,${aMid}) 52%, transparent 100%)`
+      const gradients = allPoints.map((p) => {
+        const r = Math.round(p.r)
+        const rx = Math.round(p.x)
+        const ry = Math.round(p.y)
+        const a = Math.min(1.0, p.alpha).toFixed(3)
+        const aMid = (p.alpha * 0.75).toFixed(3)
+        return `radial-gradient(circle ${r}px at ${rx}px ${ry}px, rgba(0,0,0,${a}) 0%, rgba(0,0,0,${aMid}) 55%, transparent 100%)`
       })
 
       const maskValue = gradients.join(', ')
-      overlay.style.maskImage = maskValue
       overlay.style.webkitMaskImage = maskValue
+      overlay.style.maskImage = maskValue
       overlay.style.opacity = '1'
     }
 
@@ -116,6 +143,7 @@ function InvertibleHeroTypography({ reduced }) {
 
     return () => {
       window.removeEventListener('pointermove', onPointerMove)
+      document.removeEventListener('mouseleave', onPointerLeave)
       if (rafId) cancelAnimationFrame(rafId)
     }
   }, [reduced])
@@ -140,7 +168,7 @@ function InvertibleHeroTypography({ reduced }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.1 }}
-          className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[5.4rem] xl:text-[6.2rem] font-normal leading-[0.9] tracking-[-0.035em] text-[#fbf8f0]"
+          className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[5.4rem] xl:text-[6.2rem] font-normal leading-[0.92] tracking-[-0.035em] text-[#fbf8f0]"
         >
           Parshva{' '}
           <span className="italic font-serif text-[#f0c458] transition-colors duration-300">
@@ -153,11 +181,11 @@ function InvertibleHeroTypography({ reduced }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.2 }}
-          className="border-l-2 border-[#e5a83b]/45 pl-4 sm:pl-5 py-1.5 my-3.5 backdrop-blur-[2px]"
+          className="border-l-2 border-[#e5a83b]/50 pl-5 sm:pl-6 py-2 my-4 backdrop-blur-[2px]"
         >
-          <p className="font-serif text-xl sm:text-2xl md:text-[1.85rem] text-[#f2ebe0] font-normal leading-[1.28] tracking-[-0.018em]">
+          <p className="font-serif italic text-2xl sm:text-3xl md:text-[1.95rem] text-[#f4efe6] font-normal leading-[1.26] tracking-[-0.015em]">
             “Building things that make the digital world{' '}
-            <span className="italic text-[#f5d58a]">more interesting.</span>”
+            <span className="not-italic font-serif text-[#f5d58a]">more interesting.</span>”
           </p>
         </motion.div>
 
@@ -169,8 +197,8 @@ function InvertibleHeroTypography({ reduced }) {
           className="text-sm sm:text-base md:text-lg text-[#b8b1a2] font-sans max-w-xl leading-relaxed"
         >
           I'm Parshva — a developer, engineering student at{' '}
-          <span className="text-[#fbf8f0] font-medium">KJ Somaiya School of Engineering</span>{' '}
-          (BTech AI &amp; DS 2026–2030), and independent builder exploring the intersection of software engineering, AI, and product design.
+          <span className="text-[#fbf8f0] font-medium border-b border-[#e5a83b]/30 pb-0.5">KJ Somaiya School of Engineering</span>{' '}
+          <span className="font-mono text-xs text-[#e5a83b] bg-[#e5a83b]/10 px-2 py-0.5 rounded-full border border-[#e5a83b]/25 ml-1 inline-block">(BTech AI &amp; DS 2026–2030)</span>, and independent builder exploring the intersection of software engineering, AI, and product design.
         </motion.p>
       </div>
 
@@ -178,7 +206,7 @@ function InvertibleHeroTypography({ reduced }) {
       <div
         ref={overlayRef}
         aria-hidden="true"
-        className="absolute inset-0 pointer-events-none select-none space-y-4"
+        className="absolute inset-0 pointer-events-none select-none space-y-4 z-20"
         style={{
           opacity: 0,
           WebkitMaskRepeat: 'no-repeat',
@@ -186,13 +214,13 @@ function InvertibleHeroTypography({ reduced }) {
         }}
       >
         {/* Status Eyebrow Inverted (Crisp Deep Ink Black) */}
-        <div className="font-mono text-xs uppercase tracking-[0.28em] text-[#050402] font-normal flex items-center gap-2">
+        <div className="font-mono text-xs uppercase tracking-[0.28em] text-[#050402] font-bold flex items-center gap-2">
           <span>❖</span>
           <span>[ 01 // ARCHIVE · BTECH 2026–2030 ]</span>
         </div>
 
         {/* Headline Inverted (Solid Ink Black - 100% subpixel metric alignment with base) */}
-        <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[5.4rem] xl:text-[6.2rem] font-normal leading-[0.9] tracking-[-0.035em] text-[#050402]">
+        <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-[5.4rem] xl:text-[6.2rem] font-normal leading-[0.92] tracking-[-0.035em] text-[#050402]">
           Parshva{' '}
           <span className="italic font-serif text-[#050402]">
             Shah
@@ -200,18 +228,18 @@ function InvertibleHeroTypography({ reduced }) {
         </h1>
 
         {/* Editorial Quote Inverted (Solid Ink Black - 100% metric match) */}
-        <div className="border-l-2 border-[#050402] pl-4 sm:pl-5 py-1.5 my-3.5">
-          <p className="font-serif text-xl sm:text-2xl md:text-[1.85rem] text-[#050402] font-normal leading-[1.28] tracking-[-0.018em]">
+        <div className="border-l-2 border-[#050402] pl-5 sm:pl-6 py-2 my-4">
+          <p className="font-serif italic text-2xl sm:text-3xl md:text-[1.95rem] text-[#050402] font-normal leading-[1.26] tracking-[-0.015em]">
             “Building things that make the digital world{' '}
-            <span className="italic text-[#050402]">more interesting.</span>”
+            <span className="not-italic font-serif text-[#050402]">more interesting.</span>”
           </p>
         </div>
 
         {/* Supporting Introduction Inverted (Pure Ink Black - 100% metric match) */}
-        <p className="text-sm sm:text-base md:text-lg text-[#050402] font-sans font-normal max-w-xl leading-relaxed">
+        <p className="text-sm sm:text-base md:text-lg text-[#050402] font-sans font-medium max-w-xl leading-relaxed">
           I'm Parshva — a developer, engineering student at{' '}
-          <span className="text-[#050402] font-medium">KJ Somaiya School of Engineering</span>{' '}
-          (BTech AI &amp; DS 2026–2030), and independent builder exploring the intersection of software engineering, AI, and product design.
+          <span className="text-[#050402] font-semibold border-b border-[#050402] pb-0.5">KJ Somaiya School of Engineering</span>{' '}
+          <span className="font-mono text-xs text-[#050402] bg-black/10 px-2 py-0.5 rounded-full border border-black/30 ml-1 inline-block">(BTech AI &amp; DS 2026–2030)</span>, and independent builder exploring the intersection of software engineering, AI, and product design.
         </p>
       </div>
     </div>

@@ -111,7 +111,7 @@ export default function CustomCursor({ reduced = false }) {
         ref={ringRef}
         className={`absolute top-0 left-0 rounded-full flex items-center justify-center font-mono text-[9px] font-bold tracking-widest uppercase transition-all duration-300 ${
           isText
-            ? '-ml-8 -mt-8 w-16 h-16 bg-[#c8f53c] text-black shadow-[0_0_25px_rgba(200,245,60,0.45)]'
+            ? '-ml-6 -mt-6 w-12 h-12 border border-[#c8f53c] bg-[#c8f53c]/20 text-[#c8f53c] shadow-[0_0_20px_rgba(200,245,60,0.35)] backdrop-blur-xs'
             : isHover
             ? '-ml-6 -mt-6 w-12 h-12 border-2 border-[#c8f53c] bg-[#c8f53c]/10'
             : '-ml-4 -mt-4 w-8 h-8 border border-white/30 bg-white/[0.02]'

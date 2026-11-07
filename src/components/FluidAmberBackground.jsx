@@ -299,12 +299,12 @@ export default function FluidAmberBackground({
         // Soft exponential Gaussian profile
         float splat = exp(- (d * d) / (2.0 * u_radius * u_radius));
 
-        // Soft saturation headroom to prevent runaway blowout into harsh solid white
+        // Controlled saturation headroom to retain rich amber color and prevent blowout
         float density = base.r;
-        float headroom = clamp(1.0 - density * 0.35, 0.15, 1.0);
+        float headroom = clamp(1.0 - density * 0.55, 0.10, 1.0);
         vec4 addition = u_color * (splat * headroom);
 
-        gl_FragColor = min(base + addition, vec4(2.8));
+        gl_FragColor = min(base + addition, vec4(1.6));
       }
     `
 
@@ -336,27 +336,27 @@ export default function FluidAmberBackground({
         vec2 aspectUv = v_uv * vec2(u_resolution.x / max(u_resolution.y, 1.0), 1.0);
         float smoke = getOrganicShading(aspectUv, u_time);
 
-        // 1. Organic textured dark base: infused with a subtle warm golden-amber ambient tint
-        vec3 ambientTint = u_tint_color * 0.042 * (0.8 + smoke * 0.4);
-        vec3 bg = u_base_color * (0.82 + smoke * 0.36) + ambientTint;
-        bg += vec3(0.016, 0.011, 0.005) * (smoke * smoke * 0.85);
+        // 1. Organic textured dark base: infused with a rich warm amber-bronze ambient tint
+        vec3 ambientTint = u_tint_color * 0.095 * (0.85 + smoke * 0.45);
+        vec3 bg = u_base_color * (0.85 + smoke * 0.32) + ambientTint;
+        bg += u_tint_color * 0.035 * (smoke * smoke);
 
-        // 2. Warm amber fluid glow with rich golden-honey / burnt copper tint
-        // Smooth non-linear density response (prevents runaway blowout into harsh solid white)
-        float dNorm = 1.0 - exp(-d * 0.95);
+        // 2. Warm amber fluid glow with rich golden-honey & burnt bronze tint
+        // Smooth non-linear density response (preserves rich amber tint, NEVER harsh solid white)
+        float dNorm = 1.0 - exp(-d * 0.88);
 
-        vec3 deepAmber    = u_glow_color;
-        vec3 warmGold     = mix(u_glow_color, u_tint_color, 0.55);
-        vec3 honeyCore    = vec3(1.0, 0.84, 0.38);
-        vec3 incandescent = vec3(1.0, 0.94, 0.68);
+        vec3 deepAmber    = u_glow_color; // warm amber [224, 142, 28]
+        vec3 warmBronze   = mix(u_glow_color, u_tint_color, 0.60);
+        vec3 goldenHoney  = vec3(0.96, 0.70, 0.20); // molten golden honey
+        vec3 amberCore    = mix(goldenHoney, vec3(1.0, 0.84, 0.48), 0.40);
 
-        vec3 fluidCol = deepAmber * (dNorm * 1.35)
-                      + warmGold * (pow(dNorm, 1.8) * 1.25)
-                      + honeyCore * (pow(dNorm, 2.8) * 0.95)
-                      + incandescent * (pow(dNorm, 4.5) * 0.55);
+        vec3 fluidCol = deepAmber * (dNorm * 0.90)
+                      + warmBronze * (pow(dNorm, 1.5) * 0.75)
+                      + goldenHoney * (pow(dNorm, 2.4) * 0.50)
+                      + amberCore * (pow(dNorm, 3.8) * 0.30);
 
-        // Cinematic saturation tone curve (preserves rich amber tint)
-        fluidCol = fluidCol / (1.0 + fluidCol * 0.28);
+        // Cinematic saturation tone curve (retains saturated warm amber/bronze at high density)
+        fluidCol = fluidCol / (1.0 + fluidCol * 0.48);
 
         vec3 col = bg + fluidCol;
 

@@ -27,6 +27,20 @@ export default function Nav({ reduced = false }) {
   const [soundActive, setSoundActive] = useState(isSoundEnabled())
   const [musicPlaying, setMusicPlaying] = useState(isMusicPlaying())
 
+  const handleToggleMusic = (e) => {
+    e?.stopPropagation?.()
+    if (musicPlaying) {
+      playSyntheticSound('click')
+    }
+    const next = toggleMusic()
+    setMusicPlaying(next)
+    setSoundEnabled(next)
+    setSoundActive(next)
+    if (next) {
+      playSyntheticSound('click')
+    }
+  }
+
   useEffect(() => {
     const unsub = subscribeMusicState((playing) => {
       setMusicPlaying(playing)
@@ -142,19 +156,15 @@ export default function Nav({ reduced = false }) {
             {/* Soundtrack Equalizer Player Button */}
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation()
-                playSyntheticSound('click')
-                toggleMusic()
-              }}
+              onClick={handleToggleMusic}
               onMouseEnter={() => playSyntheticSound('tick')}
               className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full font-mono text-[10px] sm:text-[11px] border transition-all flex items-center gap-2 cursor-pointer select-none active:scale-95 ${
                 musicPlaying
                   ? 'border-[#c8f53c] text-[#c8f53c] bg-[#c8f53c]/15 shadow-[0_0_16px_rgba(200,245,60,0.3)] font-semibold'
                   : 'border-white/20 text-white/70 bg-white/5 hover:text-white hover:border-[#c8f53c]/50'
               }`}
-              title={musicPlaying ? 'Pause Background Soundtrack' : 'Play Looped Background Soundtrack'}
-              aria-label={musicPlaying ? 'Pause Soundtrack' : 'Play Soundtrack'}
+              title={musicPlaying ? 'Click to Turn Soundtrack OFF' : 'Click to Turn Soundtrack ON'}
+              aria-label={musicPlaying ? 'Soundtrack is ON. Click to Turn OFF' : 'Soundtrack is OFF. Click to Turn ON'}
             >
               {/* Equalizer Bars */}
               <span className="flex items-end gap-[2px] h-3 w-3.5 pointer-events-none" aria-hidden="true">
@@ -167,15 +177,28 @@ export default function Nav({ reduced = false }) {
                   </>
                 ) : (
                   <>
-                    <span className="w-[2px] h-1.5 bg-current rounded-full opacity-60" />
-                    <span className="w-[2px] h-3 bg-current rounded-full opacity-60" />
-                    <span className="w-[2px] h-2 bg-current rounded-full opacity-60" />
-                    <span className="w-[2px] h-1 bg-current rounded-full opacity-60" />
+                    <span className="w-[2px] h-1 bg-current rounded-full opacity-40" />
+                    <span className="w-[2px] h-1 bg-current rounded-full opacity-40" />
+                    <span className="w-[2px] h-1 bg-current rounded-full opacity-40" />
+                    <span className="w-[2px] h-1 bg-current rounded-full opacity-40" />
                   </>
                 )}
               </span>
-              <span className="hidden sm:inline tracking-wider pointer-events-none">
-                {musicPlaying ? 'SOUNDTRACK: ON' : 'SOUNDTRACK: PLAY'}
+
+              {/* Status Text */}
+              <span className="tracking-wider pointer-events-none font-bold">
+                {musicPlaying ? 'SOUNDTRACK: ON' : 'SOUNDTRACK: OFF'}
+              </span>
+
+              {/* Explicit Toggle Pill [ ON | OFF ] */}
+              <span
+                className={`hidden xs:inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold transition-all ${
+                  musicPlaying
+                    ? 'bg-[#c8f53c] text-black shadow-sm'
+                    : 'bg-white/10 text-white/50 border border-white/10'
+                }`}
+              >
+                {musicPlaying ? 'ON' : 'OFF'}
               </span>
             </button>
 

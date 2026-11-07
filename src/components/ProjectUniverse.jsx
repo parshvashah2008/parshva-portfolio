@@ -8,9 +8,9 @@ import { playSyntheticSound } from '../utils/soundFX'
 
 const FILTERS = ['All', 'AI & Machine Learning', 'Web Development', 'SaaS & Products', 'Experiments']
 
-const MIN_ZOOM_DIST = 5.0
-const MAX_ZOOM_DIST = 15.0
-const DEFAULT_ZOOM_DIST = 11.4
+const MIN_ZOOM_DIST = 5.5
+const MAX_ZOOM_DIST = 16.0
+const DEFAULT_ZOOM_DIST = 12.4
 
 function distToPercent(dist) {
   const clamped = Math.max(MIN_ZOOM_DIST, Math.min(MAX_ZOOM_DIST, dist))
@@ -155,7 +155,6 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
       {/* Main Experience View */}
       {viewMode === '3d' ? (
         <div
-          data-cursor="orbit"
           className="relative w-full h-[68vh] sm:h-[72vh] md:h-[76vh]"
           onWheel={(e) => {
             // Smooth zoom dollying via wheel

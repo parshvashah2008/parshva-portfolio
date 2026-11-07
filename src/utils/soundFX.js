@@ -51,6 +51,9 @@ export function toggleSound() {
 let bgMusic = null
 let musicPlaying = false
 let userPaused = false
+if (typeof window !== 'undefined') {
+  userPaused = localStorage.getItem('parshva_music_paused') === 'true'
+}
 const musicListeners = new Set()
 
 function getMusicAudio() {
@@ -84,20 +87,19 @@ function getMusicAudio() {
 }
 
 export function isMusicPlaying() {
-  const audio = getMusicAudio()
-  return Boolean(audio && !audio.paused)
+  return musicPlaying
 }
 
 export function subscribeMusicState(callback) {
   musicListeners.add(callback)
   try {
-    callback(isMusicPlaying())
+    callback(musicPlaying)
   } catch (e) {}
   return () => musicListeners.delete(callback)
 }
 
 function notifyMusicState() {
-  const state = isMusicPlaying()
+  const state = musicPlaying
   musicListeners.forEach((fn) => {
     try {
       fn(state)
@@ -109,6 +111,12 @@ function notifyMusicState() {
 
 export function playMusic() {
   userPaused = false
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('parshva_music_paused', 'false')
+  }
+  musicPlaying = true
+  notifyMusicState()
+
   const audio = getMusicAudio()
   if (!audio) return Promise.resolve(false)
 
@@ -124,29 +132,32 @@ export function playMusic() {
         return true
       })
       .catch((err) => {
+        console.warn('Audio play restricted by browser policy:', err)
         musicPlaying = false
         notifyMusicState()
         return false
       })
   }
-  return Promise.resolve(false)
+  return Promise.resolve(true)
 }
 
 export function pauseMusic() {
   userPaused = true
-  const audio = getMusicAudio()
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('parshva_music_paused', 'true')
+  }
   musicPlaying = false
+  const audio = getMusicAudio()
   if (audio) {
-    audio.pause()
+    try {
+      audio.pause()
+    } catch (e) {}
   }
   notifyMusicState()
 }
 
 export function toggleMusic() {
-  const audio = getMusicAudio()
-  const currentlyPlaying = Boolean(audio && !audio.paused)
-
-  if (currentlyPlaying) {
+  if (musicPlaying) {
     pauseMusic()
     return false
   } else {
