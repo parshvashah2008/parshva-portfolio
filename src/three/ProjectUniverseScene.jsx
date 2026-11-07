@@ -36,17 +36,25 @@ function ProjectSpatialNode({
       meshRef.current.rotation.x += delta * 0.18
     }
 
-    // Determine if node is in front hemisphere (facing camera)
     const nodePos = new THREE.Vector3()
     meshRef.current.getWorldPosition(nodePos)
 
-    const targetPos = new THREE.Vector3(0, 0.05, 0)
-    const distToCam = camera.position.distanceTo(nodePos)
-    const distToCenter = camera.position.distanceTo(targetPos)
+    const targetPos = new THREE.Vector3(0, 0.40, 0)
+    // Vector pointing from target to camera (camera view axis)
+    const viewDir = new THREE.Vector3().subVectors(camera.position, targetPos).normalize()
+    // Vector from target to this node
+    const nodeOffset = new THREE.Vector3().subVectors(nodePos, targetPos)
+    // Projection of node along camera view axis (positive = towards camera, negative = away from camera)
+    const forwardDepth = nodeOffset.dot(viewDir)
 
-    // Hysteresis threshold to prevent flickering at the equator
-    const threshold = lastFrontRef.current ? distToCenter + 0.35 : distToCenter - 0.35
-    const nextFront = distToCam <= threshold
+    // Front focal arc: expands into full card.
+    // On desktop: 3-card snug cluster (Left, Center, Right) with 55px gaps.
+    // On mobile (<640px): 1-card center hero spotlight fitting narrow screens.
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 640
+    const frontThreshold = isMobile
+      ? (lastFrontRef.current ? 2.4 : 2.8)
+      : (lastFrontRef.current ? 1.2 : 1.5)
+    const nextFront = forwardDepth > frontThreshold
 
     if (nextFront !== lastFrontRef.current) {
       lastFrontRef.current = nextFront
@@ -55,7 +63,11 @@ function ProjectSpatialNode({
   })
 
   // Whether to show the expanded card vs the sleek beacon
-  const showExpanded = isFront || isSelected || isHovered
+  // Only the 3 front-facing focal cards are expanded.
+  // Background/side nodes show their glowing celestial 3D star orb, and reveal
+  // their beacon pill ONLY on hover, completely eliminating any overlapping text.
+  const showExpanded = isFront
+  const showBeacon = !showExpanded && isHovered
 
   return (
     <Float
@@ -127,7 +139,7 @@ function ProjectSpatialNode({
                     ? 'scale-102 z-40'
                     : 'hover:scale-102 opacity-95'
                 }`}
-                style={{ width: '232px' }}
+                style={{ width: '210px' }}
               >
                 <div
                   className="relative p-2.5 rounded-2xl backdrop-blur-xl border transition-all duration-300 shadow-2xl overflow-hidden group"
@@ -255,7 +267,7 @@ function ProjectSpatialNode({
                   </div>
                 </div>
               </div>
-            ) : (
+            ) : showBeacon ? (
               /* Background: Sleek Celestial Beacon Pill (Zero Overlapping / Clean Depth) */
               <div
                 onClick={(e) => {
@@ -290,7 +302,7 @@ function ProjectSpatialNode({
                   {project.category.split(' ')[0]}
                 </span>
               </div>
-            )}
+            ) : null}
           </Html>
         )}
       </group>
@@ -374,7 +386,7 @@ function CameraZoomBridge({ targetDistance, controlsRef }) {
     const controls = controlsRef.current
     if (!controls || targetDistance == null) return
 
-    const target = controls.target || new THREE.Vector3(0, 0.05, 0)
+    const target = controls.target || new THREE.Vector3(0, 0.40, 0)
     const offset = new THREE.Vector3().subVectors(camera.position, target)
     const currentDist = offset.length()
 
@@ -397,6 +409,82 @@ function CameraZoomBridge({ targetDistance, controlsRef }) {
 }
 
 /**
+ * Constellation Carousel: Smoothly rotates the constellation to face whichever project is selected
+ */
+function ConstellationCarousel({
+  projects,
+  positions,
+  activeProject,
+  hoveredProject,
+  onHoverProject,
+  onSelectProject,
+  activeFilter,
+  reduced,
+  modalOpen,
+}) {
+  const groupRef = useRef(null)
+  const prevIdxRef = useRef(-1)
+  const targetRotationRef = useRef(0)
+
+  useEffect(() => {
+    if (!activeProject || projects.length === 0) return
+    const idx = projects.findIndex((p) => p.id === activeProject.id)
+    if (idx === -1) return
+
+    if (prevIdxRef.current === -1) {
+      prevIdxRef.current = idx
+      return
+    }
+
+    if (prevIdxRef.current !== idx) {
+      let diff = idx - prevIdxRef.current
+      if (diff > projects.length / 2) diff -= projects.length
+      if (diff < -projects.length / 2) diff += projects.length
+
+      targetRotationRef.current += -diff * ((Math.PI * 2) / projects.length)
+      prevIdxRef.current = idx
+    }
+  }, [activeProject, projects])
+
+  useFrame((_, delta) => {
+    if (!groupRef.current) return
+    groupRef.current.rotation.y = THREE.MathUtils.damp(
+      groupRef.current.rotation.y,
+      targetRotationRef.current,
+      4.8,
+      delta
+    )
+  })
+
+  return (
+    <group ref={groupRef}>
+      {projects.map((p, idx) => {
+        const match =
+          activeFilter === 'All' ||
+          p.category.toLowerCase().includes(activeFilter.toLowerCase()) ||
+          (activeFilter === 'Experiments' && p.category === 'Experiments') ||
+          (activeFilter === 'AI & Machine Learning' && p.category.includes('AI'))
+
+        return (
+          <ProjectSpatialNode
+            key={p.id}
+            project={p}
+            position={positions[idx]}
+            active={activeProject}
+            hovered={hoveredProject}
+            onHover={onHoverProject}
+            onSelect={onSelectProject}
+            reduced={reduced}
+            filterMatch={match}
+            modalOpen={modalOpen}
+          />
+        )
+      })}
+    </group>
+  )
+}
+
+/**
  * Main 3D Project Universe Experience Canvas
  */
 export default function ProjectUniverseScene({
@@ -413,14 +501,16 @@ export default function ProjectUniverseScene({
 }) {
   const controlsRef = useRef(null)
 
-  // Distribute projects in a wide 3D celestial orbit with alternating upper/lower heights
-  // Alternating heights (+0.52 and -0.48) ensures neighboring nodes never collide horizontally!
+  // Snug, cohesive celestial cluster bringing all cards closer together
+  // Center altitude (+0.38) and tight radius (3.3) creates a unified, intimate orbit
   const positions = useMemo(() => {
     const total = projects.length
     return projects.map((_, i) => {
-      const angle = (i / total) * Math.PI * 2
-      const radius = 7.2
-      const height = i % 2 === 0 ? 0.52 : -0.48
+      // Offset by PI/2 so project 0 starts dead-center front facing the camera
+      const angle = Math.PI / 2 + (i / total) * Math.PI * 2
+      const radius = 3.3
+      // Gentle, cohesive orbital altitude with subtle undulating breath
+      const height = 0.38 + ((i % 2 === 0 ? 1 : -1) * 0.08)
       const zOffset = Math.sin(angle) * radius
 
       return [
@@ -433,7 +523,7 @@ export default function ProjectUniverseScene({
 
   return (
     <Canvas
-      camera={{ position: [0, 0.5, 10.2], fov: 42 }}
+      camera={{ position: [0, 0.50, 9.2], fov: 38 }}
       dpr={[1, 1.8]}
       gl={{ antialias: true, alpha: true }}
       className="w-full h-full cursor-grab active:cursor-grabbing"
@@ -460,29 +550,18 @@ export default function ProjectUniverseScene({
         {/* Ambient nebular particle system */}
         <CosmicParticles count={900} reduced={reduced} />
 
-        {/* Interactive 3D Project Constellation Nodes */}
-        {projects.map((p, idx) => {
-          const match =
-            activeFilter === 'All' ||
-            p.category.toLowerCase().includes(activeFilter.toLowerCase()) ||
-            (activeFilter === 'Experiments' && p.category === 'Experiments') ||
-            (activeFilter === 'AI & Machine Learning' && p.category.includes('AI'))
-
-          return (
-            <ProjectSpatialNode
-              key={p.id}
-              project={p}
-              position={positions[idx]}
-              active={activeProject}
-              hovered={hoveredProject}
-              onHover={onHoverProject}
-              onSelect={onSelectProject}
-              reduced={reduced}
-              filterMatch={match}
-              modalOpen={modalOpen}
-            />
-          )
-        })}
+        {/* Interactive 3D Project Constellation Nodes with Dynamic Carousel Alignment */}
+        <ConstellationCarousel
+          projects={projects}
+          positions={positions}
+          activeProject={activeProject}
+          hoveredProject={hoveredProject}
+          onHoverProject={onHoverProject}
+          onSelectProject={onSelectProject}
+          activeFilter={activeFilter}
+          reduced={reduced}
+          modalOpen={modalOpen}
+        />
 
         {/* Orbit / Pan controls with smooth wheel & pinch zoom enabled */}
         <OrbitControls
@@ -492,11 +571,11 @@ export default function ProjectUniverseScene({
           rotateSpeed={0.65}
           enableZoom={true}
           zoomSpeed={0.8}
-          minDistance={4.8}
-          maxDistance={13.5}
+          minDistance={4.2}
+          maxDistance={12.0}
           maxPolarAngle={Math.PI / 1.85}
           minPolarAngle={Math.PI / 3.4}
-          target={[0, 0.05, 0]}
+          target={[0, 0.40, 0]}
         />
 
         {/* Dynamic Bidirectional Zoom Bridge */}
