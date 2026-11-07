@@ -8,9 +8,9 @@ import { playSyntheticSound } from '../utils/soundFX'
 
 const FILTERS = ['All', 'AI & Machine Learning', 'Web Development', 'SaaS & Products', 'Experiments']
 
-const MIN_ZOOM_DIST = 4.2
-const MAX_ZOOM_DIST = 12.0
-const DEFAULT_ZOOM_DIST = 9.2
+const MIN_ZOOM_DIST = 5.0
+const MAX_ZOOM_DIST = 15.0
+const DEFAULT_ZOOM_DIST = 11.4
 
 function distToPercent(dist) {
   const clamped = Math.max(MIN_ZOOM_DIST, Math.min(MAX_ZOOM_DIST, dist))
