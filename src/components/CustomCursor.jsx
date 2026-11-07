@@ -31,8 +31,15 @@ export default function CustomCursor({ reduced = false }) {
       mouseX = e.clientX
       mouseY = e.clientY
 
-      // Check hovered element
       const target = e.target
+
+      // If hovering over FluidAmberBackground, let its bespoke square sand cursor take precedence
+      if (target && target.closest && target.closest('[data-fluid-bg]')) {
+        setCursorState((prev) => (prev.active ? { ...prev, active: false } : prev))
+        return
+      }
+
+      // Check hovered element
       const interactiveEl = target.closest(
         'button, a, [data-cursor], input, textarea, select'
       )

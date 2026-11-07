@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import EditorialPortraitHero from './EditorialPortraitHero'
 import MagneticButton from './MagneticButton'
+import FluidAmberBackground from './FluidAmberBackground'
 import { projects } from '../data/projects'
 import { forageCertifications, anthropicCertifications } from '../data/certifications'
 import { useGitHubStats } from '../utils/githubStats'
@@ -28,14 +29,16 @@ export default function Hero({ reduced = false }) {
   }, [reduced, stats.length])
 
   return (
-    <section
+    <FluidAmberBackground
+      as="section"
       id="home"
-      className="relative min-h-[100svh] flex flex-col justify-between pt-24 pb-12 overflow-hidden bg-[#040504]"
+      backgroundColor="#090703"
+      glowColor={[152, 99, 0]}
+      cursorColor="#c8b89a"
+      grainOpacity={0.32}
+      reduced={reduced}
+      className="relative min-h-[100svh] flex flex-col justify-between pt-24 pb-12 overflow-hidden"
     >
-      {/* Ambient background glows */}
-      <div className="absolute top-10 left-1/4 w-[42vw] h-[42vw] bg-[#c8f53c]/[0.025] rounded-full blur-[160px] pointer-events-none" />
-      <div className="absolute top-1/2 right-10 w-[38vw] h-[38vw] bg-[#1a3828]/[0.3] rounded-full blur-[150px] pointer-events-none" />
-
       {/* Main Hero Grid */}
       <div className="shell w-full my-auto grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-14 items-center">
         {/* Left Column: Expressive Typography & Storytelling */}
@@ -202,6 +205,6 @@ export default function Hero({ reduced = false }) {
           </div>
         </div>
       </div>
-    </section>
+    </FluidAmberBackground>
   )
 }
