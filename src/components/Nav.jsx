@@ -142,21 +142,22 @@ export default function Nav({ reduced = false }) {
             {/* Soundtrack Equalizer Player Button */}
             <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation()
                 playSyntheticSound('click')
                 toggleMusic()
               }}
               onMouseEnter={() => playSyntheticSound('tick')}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full font-mono text-[10px] sm:text-[11px] border transition-all flex items-center gap-2 cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full font-mono text-[10px] sm:text-[11px] border transition-all flex items-center gap-2 cursor-pointer select-none active:scale-95 ${
                 musicPlaying
-                  ? 'border-[#c8f53c] text-[#c8f53c] bg-[#c8f53c]/10 shadow-[0_0_14px_rgba(200,245,60,0.25)] font-semibold'
-                  : 'border-white/15 text-white/60 bg-white/5 hover:text-white/90 hover:border-white/30'
+                  ? 'border-[#c8f53c] text-[#c8f53c] bg-[#c8f53c]/15 shadow-[0_0_16px_rgba(200,245,60,0.3)] font-semibold'
+                  : 'border-white/20 text-white/70 bg-white/5 hover:text-white hover:border-[#c8f53c]/50'
               }`}
               title={musicPlaying ? 'Pause Background Soundtrack' : 'Play Looped Background Soundtrack'}
               aria-label={musicPlaying ? 'Pause Soundtrack' : 'Play Soundtrack'}
             >
               {/* Equalizer Bars */}
-              <span className="flex items-end gap-[2px] h-3 w-3.5" aria-hidden="true">
+              <span className="flex items-end gap-[2px] h-3 w-3.5 pointer-events-none" aria-hidden="true">
                 {musicPlaying ? (
                   <>
                     <span className="w-[2px] bg-[#c8f53c] rounded-full animate-music-bar-1" />
@@ -173,7 +174,7 @@ export default function Nav({ reduced = false }) {
                   </>
                 )}
               </span>
-              <span className="hidden sm:inline tracking-wider">
+              <span className="hidden sm:inline tracking-wider pointer-events-none">
                 {musicPlaying ? 'SOUNDTRACK: ON' : 'SOUNDTRACK: PLAY'}
               </span>
             </button>
@@ -247,17 +248,19 @@ export default function Nav({ reduced = false }) {
               <span className="font-mono text-xs uppercase tracking-wider text-white/70">Soundtrack</span>
               <button
                 type="button"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation()
                   playSyntheticSound('click')
                   toggleMusic()
                 }}
-                className={`px-3 py-1.5 rounded-full font-mono text-xs border transition-all flex items-center gap-2 ${
+                className={`px-3 py-1.5 rounded-full font-mono text-xs border transition-all flex items-center gap-2 cursor-pointer select-none active:scale-95 ${
                   musicPlaying
-                    ? 'border-[#c8f53c] text-[#c8f53c] bg-[#c8f53c]/10 shadow-[0_0_12px_rgba(200,245,60,0.2)]'
-                    : 'border-white/20 text-white/60 bg-white/5'
+                    ? 'border-[#c8f53c] text-[#c8f53c] bg-[#c8f53c]/15 shadow-[0_0_12px_rgba(200,245,60,0.25)] font-semibold'
+                    : 'border-white/20 text-white/60 bg-white/5 hover:text-white'
                 }`}
+                aria-label={musicPlaying ? 'Pause Soundtrack' : 'Play Soundtrack'}
               >
-                <span className="flex items-end gap-[2px] h-3 w-3.5">
+                <span className="flex items-end gap-[2px] h-3 w-3.5 pointer-events-none">
                   {musicPlaying ? (
                     <>
                       <span className="w-[2px] bg-[#c8f53c] rounded-full animate-music-bar-1" />
@@ -274,7 +277,7 @@ export default function Nav({ reduced = false }) {
                     </>
                   )}
                 </span>
-                <span>{musicPlaying ? 'PLAYING' : 'TAP TO PLAY'}</span>
+                <span className="pointer-events-none">{musicPlaying ? 'SOUNDTRACK: ON' : 'SOUNDTRACK: PLAY'}</span>
               </button>
             </div>
 

@@ -50,15 +50,8 @@ export function toggleSound() {
 // ----------------------------------------------------
 let bgMusic = null
 let musicPlaying = false
-let fadeInterval = null
+let userPaused = false
 const musicListeners = new Set()
-
-// Per user instruction: soundtrack must ALWAYS play on launch, never start paused
-let musicWanted = true
-if (typeof window !== 'undefined') {
-  localStorage.removeItem('parshva_music_playing')
-  sessionStorage.removeItem('parshva_soundtrack_paused')
-}
 
 function getMusicAudio() {
   if (typeof window === 'undefined') return null
@@ -69,17 +62,30 @@ function getMusicAudio() {
     bgMusic = new Audio(audioUrl)
     bgMusic.loop = true
     bgMusic.preload = 'auto'
-    bgMusic.volume = 0.45
+    bgMusic.volume = 0.40
+
+    // Synchronize native audio events with UI state
+    bgMusic.addEventListener('play', () => {
+      musicPlaying = true
+      notifyMusicState()
+    })
+    bgMusic.addEventListener('pause', () => {
+      musicPlaying = false
+      notifyMusicState()
+    })
     bgMusic.addEventListener('ended', () => {
-      bgMusic.currentTime = 0
-      bgMusic.play().catch(() => {})
+      if (!userPaused) {
+        bgMusic.currentTime = 0
+        bgMusic.play().catch(() => {})
+      }
     })
   }
   return bgMusic
 }
 
 export function isMusicPlaying() {
-  return musicPlaying || musicWanted
+  const audio = getMusicAudio()
+  return Boolean(audio && !audio.paused)
 }
 
 export function subscribeMusicState(callback) {
@@ -102,23 +108,11 @@ function notifyMusicState() {
 }
 
 export function playMusic() {
+  userPaused = false
   const audio = getMusicAudio()
   if (!audio) return Promise.resolve(false)
 
-  if (fadeInterval) {
-    clearInterval(fadeInterval)
-    fadeInterval = null
-  }
-
-  musicWanted = true
-  notifyMusicState()
-
-  const targetVol = 0.45
-  if (musicPlaying && audio.volume > 0.3 && !audio.paused) {
-    return Promise.resolve(true)
-  }
-
-  audio.volume = 0
+  audio.volume = 0.40
   const playPromise = audio.play()
 
   if (playPromise !== undefined) {
@@ -127,23 +121,11 @@ export function playMusic() {
         musicPlaying = true
         soundEnabled = true
         notifyMusicState()
-
-        // Smooth volume fade-in
-        let vol = 0
-        fadeInterval = setInterval(() => {
-          vol += 0.05
-          if (vol >= targetVol) {
-            audio.volume = targetVol
-            clearInterval(fadeInterval)
-            fadeInterval = null
-          } else {
-            audio.volume = Math.min(vol, targetVol)
-          }
-        }, 40)
         return true
       })
       .catch((err) => {
-        // Autoplay policy prevented immediate unmuted playback; will start on first user gesture
+        musicPlaying = false
+        notifyMusicState()
         return false
       })
   }
@@ -151,39 +133,20 @@ export function playMusic() {
 }
 
 export function pauseMusic() {
+  userPaused = true
   const audio = getMusicAudio()
-  musicWanted = false
-
-  if (!audio) {
-    musicPlaying = false
-    notifyMusicState()
-    return
+  musicPlaying = false
+  if (audio) {
+    audio.pause()
   }
-
-  if (fadeInterval) {
-    clearInterval(fadeInterval)
-    fadeInterval = null
-  }
-
-  // Smooth fade-out before pause
-  let vol = audio.volume
-  fadeInterval = setInterval(() => {
-    vol -= 0.08
-    if (vol <= 0.02) {
-      audio.volume = 0
-      audio.pause()
-      musicPlaying = false
-      clearInterval(fadeInterval)
-      fadeInterval = null
-      notifyMusicState()
-    } else {
-      audio.volume = Math.max(0, vol)
-    }
-  }, 40)
+  notifyMusicState()
 }
 
 export function toggleMusic() {
-  if (musicPlaying) {
+  const audio = getMusicAudio()
+  const currentlyPlaying = Boolean(audio && !audio.paused)
+
+  if (currentlyPlaying) {
     pauseMusic()
     return false
   } else {
@@ -194,28 +157,35 @@ export function toggleMusic() {
 
 // Global auto-start on page load + seamless fallback on very first user gesture
 if (typeof window !== 'undefined') {
-  // Attempt to play immediately on load
-  const startImmediately = () => {
-    if (musicWanted) {
+  const startAudio = () => {
+    if (!userPaused && !isMusicPlaying()) {
       playMusic().catch(() => {})
     }
   }
 
+  // Attempt to play immediately on load
   if (document.readyState === 'complete') {
-    startImmediately()
+    startAudio()
   } else {
-    window.addEventListener('load', startImmediately, { once: true })
+    window.addEventListener('load', startAudio, { once: true })
   }
 
-  // Ensure playback starts on the very first user interaction anywhere on page
-  const unlockEvents = ['pointerdown', 'mousedown', 'click', 'keydown', 'touchstart']
-  const unlockAudio = () => {
-    if (musicWanted) {
+  // Ensure playback starts on user interaction if initial autoplay was blocked by browser policy
+  const unlockEvents = ['pointerdown', 'keydown', 'touchstart']
+  const unlockAudio = (e) => {
+    // If the click is on the soundtrack toggle itself, let toggleMusic handle it
+    if (e.target && e.target.closest && e.target.closest('button[aria-label*="Soundtrack"]')) {
+      return
+    }
+
+    if (!userPaused && !isMusicPlaying()) {
       playMusic().then((started) => {
         if (started) {
           unlockEvents.forEach((ev) => window.removeEventListener(ev, unlockAudio))
         }
       }).catch(() => {})
+    } else {
+      unlockEvents.forEach((ev) => window.removeEventListener(ev, unlockAudio))
     }
   }
 

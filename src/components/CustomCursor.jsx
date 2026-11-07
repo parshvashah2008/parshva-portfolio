@@ -90,10 +90,10 @@ export default function CustomCursor({ reduced = false }) {
       className="hidden md:block pointer-events-none fixed inset-0 z-[9999999] overflow-hidden"
       style={{ opacity: cursorState.active ? 1 : 0, transition: 'opacity 0.25s' }}
     >
-      {/* Precision Core Dot */}
+      {/* Precision Core Dot (zero latency, exact hardware cursor tracking) */}
       <div
         ref={dotRef}
-        className="absolute top-0 left-0 -ml-1 -mt-1 w-2 h-2 rounded-full bg-[#c8f53c] shadow-[0_0_10px_#c8f53c] transition-transform duration-75"
+        className="absolute top-0 left-0 -ml-1 -mt-1 w-2 h-2 rounded-full bg-[#c8f53c] shadow-[0_0_10px_#c8f53c]"
         style={{
           opacity: isText ? 0 : 1,
         }}
