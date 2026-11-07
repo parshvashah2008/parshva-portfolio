@@ -44,8 +44,9 @@ function parseColor(input, defaultColor = [0.035, 0.027, 0.012]) {
  */
 export default function FluidAmberBackground({
   backgroundColor = '#090703',
-  glowColor = [152, 99, 0],
-  cursorColor = '#c8b89a',
+  glowColor = [224, 142, 28],
+  tintColor = '#d98b1e',
+  cursorColor = '#d8c4a0',
   grainOpacity = 0.32,
   className = '',
   style = {},
@@ -62,7 +63,8 @@ export default function FluidAmberBackground({
 
   // Parse colors
   const parsedBgColor = useMemo(() => parseColor(backgroundColor, [0.035, 0.027, 0.012]), [backgroundColor])
-  const parsedGlowColor = useMemo(() => parseColor(glowColor, [0.596, 0.388, 0.0]), [glowColor])
+  const parsedGlowColor = useMemo(() => parseColor(glowColor, [0.878, 0.557, 0.11]), [glowColor])
+  const parsedTintColor = useMemo(() => parseColor(tintColor, [0.851, 0.545, 0.118]), [tintColor])
 
   // Detect fine pointer (devices with mouse / hover capability)
   useEffect(() => {
@@ -110,9 +112,10 @@ export default function FluidAmberBackground({
             points.splice(i, 1)
             continue
           }
-          const alpha = (1 - pt.age) * 0.45
+          const alpha = (1 - pt.age) * 0.55
           const grad = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, pt.radius)
-          grad.addColorStop(0, `rgba(${glowColor[0] || 152}, ${glowColor[1] || 99}, ${glowColor[2] || 0}, ${alpha})`)
+          grad.addColorStop(0, `rgba(${glowColor[0] || 224}, ${glowColor[1] || 142}, ${glowColor[2] || 28}, ${alpha})`)
+          grad.addColorStop(0.5, `rgba(217, 139, 30, ${alpha * 0.75})`)
           grad.addColorStop(1, 'rgba(9, 7, 3, 0)')
           ctx.fillStyle = grad
           ctx.beginPath()
@@ -296,7 +299,12 @@ export default function FluidAmberBackground({
         // Soft exponential Gaussian profile
         float splat = exp(- (d * d) / (2.0 * u_radius * u_radius));
 
-        gl_FragColor = base + u_color * splat;
+        // Soft saturation headroom to prevent runaway blowout into harsh solid white
+        float density = base.r;
+        float headroom = clamp(1.0 - density * 0.35, 0.15, 1.0);
+        vec4 addition = u_color * (splat * headroom);
+
+        gl_FragColor = min(base + addition, vec4(2.8));
       }
     `
 
@@ -309,6 +317,7 @@ export default function FluidAmberBackground({
       uniform float u_time;
       uniform vec3 u_base_color;
       uniform vec3 u_glow_color;
+      uniform vec3 u_tint_color;
       uniform float u_grain_opacity;
 
       float getOrganicShading(vec2 uv, float t) {
@@ -327,21 +336,27 @@ export default function FluidAmberBackground({
         vec2 aspectUv = v_uv * vec2(u_resolution.x / max(u_resolution.y, 1.0), 1.0);
         float smoke = getOrganicShading(aspectUv, u_time);
 
-        // 1. Organic textured dark base: shifts slowly to prevent flat look
-        vec3 bg = u_base_color * (0.84 + smoke * 0.34);
+        // 1. Organic textured dark base: infused with a subtle warm golden-amber ambient tint
+        vec3 ambientTint = u_tint_color * 0.042 * (0.8 + smoke * 0.4);
+        vec3 bg = u_base_color * (0.82 + smoke * 0.36) + ambientTint;
         bg += vec3(0.016, 0.011, 0.005) * (smoke * smoke * 0.85);
 
-        // 2. Warm amber fluid glow with burnt gold core & soft additive curve
-        vec3 amberGlow = u_glow_color;
-        vec3 burntGold = vec3(1.0, 0.76, 0.28);
-        vec3 coreShine = vec3(1.0, 0.94, 0.82);
+        // 2. Warm amber fluid glow with rich golden-honey / burnt copper tint
+        // Smooth non-linear density response (prevents runaway blowout into harsh solid white)
+        float dNorm = 1.0 - exp(-d * 0.95);
 
-        vec3 fluidCol = amberGlow * (d * 1.55)
-                      + burntGold * (pow(d, 2.2) * 1.05)
-                      + coreShine * (pow(d, 4.2) * 0.55);
+        vec3 deepAmber    = u_glow_color;
+        vec3 warmGold     = mix(u_glow_color, u_tint_color, 0.55);
+        vec3 honeyCore    = vec3(1.0, 0.84, 0.38);
+        vec3 incandescent = vec3(1.0, 0.94, 0.68);
 
-        // Cinematic saturation rolloff (never clamps to harsh solid orange)
-        fluidCol = fluidCol / (1.0 + fluidCol * 0.42);
+        vec3 fluidCol = deepAmber * (dNorm * 1.35)
+                      + warmGold * (pow(dNorm, 1.8) * 1.25)
+                      + honeyCore * (pow(dNorm, 2.8) * 0.95)
+                      + incandescent * (pow(dNorm, 4.5) * 0.55);
+
+        // Cinematic saturation tone curve (preserves rich amber tint)
+        fluidCol = fluidCol / (1.0 + fluidCol * 0.28);
 
         vec3 col = bg + fluidCol;
 
@@ -629,8 +644,8 @@ export default function FluidAmberBackground({
 
       gl.uniform2f(gl.getUniformLocation(simProgram, 'u_texel_size'), 1.0 / simWidth, 1.0 / simHeight)
       gl.uniform1f(gl.getUniformLocation(simProgram, 'u_dt'), dt)
-      // Exponential decay rate: burns away softly after movement stops
-      gl.uniform1f(gl.getUniformLocation(simProgram, 'u_dissipation'), 0.982)
+      // Exponential decay rate: burns away softly and organically after movement stops
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'u_dissipation'), 0.978)
       gl.uniform1f(gl.getUniformLocation(simProgram, 'u_time'), timeSec)
       gl.drawArrays(gl.TRIANGLES, 0, 6)
       densityFBO.swap()
@@ -653,6 +668,7 @@ export default function FluidAmberBackground({
       gl.uniform1f(gl.getUniformLocation(displayProgram, 'u_time'), timeSec)
       gl.uniform3f(gl.getUniformLocation(displayProgram, 'u_base_color'), parsedBgColor[0], parsedBgColor[1], parsedBgColor[2])
       gl.uniform3f(gl.getUniformLocation(displayProgram, 'u_glow_color'), parsedGlowColor[0], parsedGlowColor[1], parsedGlowColor[2])
+      gl.uniform3f(gl.getUniformLocation(displayProgram, 'u_tint_color'), parsedTintColor[0], parsedTintColor[1], parsedTintColor[2])
       gl.uniform1f(gl.getUniformLocation(displayProgram, 'u_grain_opacity'), reduced ? grainOpacity * 0.5 : grainOpacity)
 
       gl.drawArrays(gl.TRIANGLES, 0, 6)
@@ -675,7 +691,7 @@ export default function FluidAmberBackground({
       gl.deleteProgram(splatProgram)
       gl.deleteProgram(displayProgram)
     }
-  }, [backgroundColor, glowColor, grainOpacity, parsedBgColor, parsedGlowColor, reduced])
+  }, [backgroundColor, glowColor, grainOpacity, parsedBgColor, parsedGlowColor, parsedTintColor, reduced, tintColor])
 
   // Custom Square Cursor Follower with Smooth Easing
   useEffect(() => {
