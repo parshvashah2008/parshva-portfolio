@@ -72,8 +72,10 @@ function ProjectSpatialNode({
         {!modalOpen && (
           <Html
             center
-            distanceFactor={7.8}
+            distanceFactor={6.2}
             position={[0, 0, 0]}
+            zIndexRange={[200, 0]}
+            zIndexRange={[200, 0]}
             style={{
               transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
               opacity: filterMatch ? 1 : 0.25,
@@ -300,37 +302,40 @@ function CosmicParticles({ count = 800, reduced = false }) {
 /**
  * Camera Zoom Controller Bridge between UI Neon Scrollbar and Three.js OrbitControls
  */
-function CameraZoomBridge({ targetDistance, onDistanceChange, controlsRef }) {
+function CameraZoomBridge({ targetDistance, controlsRef }) {
   const { camera } = useThree()
+  const targetDistRef = useRef(targetDistance)
 
-  // Smoothly update camera distance when slider or buttons are adjusted
+  // Update target distance ref whenever slider or +/- buttons change
   useEffect(() => {
-    if (!controlsRef.current || targetDistance == null) return
-    const controls = controlsRef.current
-    const target = controls.target || new THREE.Vector3(0, 0.6, 0)
-
-    const dir = new THREE.Vector3().subVectors(camera.position, target)
-    if (dir.lengthSq() < 0.0001) return
-    dir.normalize()
-
-    camera.position.copy(target).addScaledVector(dir, targetDistance)
-    controls.update()
-  }, [targetDistance, camera, controlsRef])
-
-  // Report wheel / pinch zoom changes back to the slider
-  useEffect(() => {
-    const controls = controlsRef.current
-    if (!controls) return
-
-    const handleChange = () => {
-      const target = controls.target || new THREE.Vector3(0, 0.6, 0)
-      const currentDist = camera.position.distanceTo(target)
-      onDistanceChange?.(currentDist)
+    if (targetDistance != null) {
+      targetDistRef.current = targetDistance
     }
+  }, [targetDistance])
 
-    controls.addEventListener('change', handleChange)
-    return () => controls.removeEventListener('change', handleChange)
-  }, [controlsRef, camera, onDistanceChange])
+  // Smoothly lerp camera to targetDistance in the render loop with buttery 60fps motion
+  useFrame(() => {
+    const controls = controlsRef.current
+    if (!controls || targetDistRef.current == null) return
+
+    const target = controls.target || new THREE.Vector3(0, 0.05, 0)
+    const offset = new THREE.Vector3().subVectors(camera.position, target)
+    const currentDist = offset.length()
+
+    if (currentDist < 0.001) return
+
+    const diff = Math.abs(currentDist - targetDistRef.current)
+    if (diff > 0.02) {
+      const nextDist = THREE.MathUtils.lerp(currentDist, targetDistRef.current, 0.25)
+      offset.setLength(nextDist)
+      camera.position.copy(target).add(offset)
+      controls.update()
+    } else if (diff > 0.002) {
+      offset.setLength(targetDistRef.current)
+      camera.position.copy(target).add(offset)
+      controls.update()
+    }
+  })
 
   return null
 }
@@ -352,15 +357,16 @@ export default function ProjectUniverseScene({
 }) {
   const controlsRef = useRef(null)
 
-  // Distribute projects in an elevated 3D celestial ellipse / constellation
+  // Distribute projects in an elevated 3D celestial ellipse / constellation with ample breathing room
   const positions = useMemo(() => {
     const total = projects.length
     return projects.map((_, i) => {
-      // Cylindrical/elliptical orbital distribution positioned above the bottom HUD
+      // Wide circular celestial orbit with comfortable spacing between all cards
       const angle = (i / total) * Math.PI * 2
-      const radius = 4.4 + (i % 2 === 0 ? 0.4 : -0.3)
-      const height = ((i % 3) - 0.1) * 1.1 + Math.sin(i * 1.4) * 0.35
-      const zOffset = Math.sin(angle) * radius * 0.9
+      const radius = 6.2 + (i % 2 === 0 ? 0.35 : -0.35)
+      // Height positioned in lower-mid tier well clear of top HUD
+      const height = -0.18 + ((i % 3) - 1) * 0.32 + Math.sin(i * 1.5) * 0.1
+      const zOffset = Math.sin(angle) * radius * 0.92
 
       return [
         Math.cos(angle) * radius,
@@ -372,7 +378,7 @@ export default function ProjectUniverseScene({
 
   return (
     <Canvas
-      camera={{ position: [0, 0.7, 8.2], fov: 44 }}
+      camera={{ position: [0, 0.5, 10.2], fov: 42 }}
       dpr={[1, 1.8]}
       gl={{ antialias: true, alpha: true }}
       className="w-full h-full cursor-grab active:cursor-grabbing"
@@ -423,24 +429,21 @@ export default function ProjectUniverseScene({
           )
         })}
 
-        {/* Orbit / Pan controls */}
+        {/* Orbit / Pan controls with zoom exclusively driven by the Neon Zoom HUD */}
         <OrbitControls
           ref={controlsRef}
           enableDamping
           dampingFactor={0.06}
           rotateSpeed={0.65}
-          zoomSpeed={0.8}
-          minDistance={4.2}
-          maxDistance={12.0}
+          enableZoom={false}
           maxPolarAngle={Math.PI / 1.85}
           minPolarAngle={Math.PI / 3.4}
-          target={[0, 0.6, 0]}
+          target={[0, 0.05, 0]}
         />
 
         {/* Dynamic Zoom Bridge for Neon Zoom Scrollbar */}
         <CameraZoomBridge
           targetDistance={zoomDistance}
-          onDistanceChange={onDistanceChange}
           controlsRef={controlsRef}
         />
       </Suspense>
