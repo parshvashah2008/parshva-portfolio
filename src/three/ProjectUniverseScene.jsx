@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useRef, useEffect } from 'react'
+import { Suspense, useMemo, useRef, useState, useEffect } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Float, Html, Stars, OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
@@ -6,7 +6,9 @@ import ProjectThumbnail from '../components/ProjectThumbnail'
 import { playSyntheticSound } from '../utils/soundFX'
 
 /**
- * 3D Project Node floating in spatial universe
+ * 3D Project Node floating in spatial universe with smart depth culling.
+ * Foreground nodes render rich interactive 3D cards.
+ * Background nodes render sleek celestial beacon pills so cards NEVER collide or overlap.
  */
 function ProjectSpatialNode({
   project,
@@ -22,19 +24,44 @@ function ProjectSpatialNode({
   const meshRef = useRef(null)
   const isSelected = active?.id === project.id
   const isHovered = hovered?.id === project.id
+  const [isFront, setIsFront] = useState(true)
+  const lastFrontRef = useRef(true)
 
-  // Subtle pulsing animation on the spatial core
-  useFrame((state, delta) => {
-    if (!meshRef.current || reduced) return
-    meshRef.current.rotation.y += delta * 0.4
-    meshRef.current.rotation.x += delta * 0.2
+  // Real-time camera proximity tracking & subtle core rotation
+  useFrame(({ camera }, delta) => {
+    if (!meshRef.current) return
+
+    if (!reduced) {
+      meshRef.current.rotation.y += delta * 0.35
+      meshRef.current.rotation.x += delta * 0.18
+    }
+
+    // Determine if node is in front hemisphere (facing camera)
+    const nodePos = new THREE.Vector3()
+    meshRef.current.getWorldPosition(nodePos)
+
+    const targetPos = new THREE.Vector3(0, 0.05, 0)
+    const distToCam = camera.position.distanceTo(nodePos)
+    const distToCenter = camera.position.distanceTo(targetPos)
+
+    // Hysteresis threshold to prevent flickering at the equator
+    const threshold = lastFrontRef.current ? distToCenter + 0.35 : distToCenter - 0.35
+    const nextFront = distToCam <= threshold
+
+    if (nextFront !== lastFrontRef.current) {
+      lastFrontRef.current = nextFront
+      setIsFront(nextFront)
+    }
   })
+
+  // Whether to show the expanded card vs the sleek beacon
+  const showExpanded = isFront || isSelected || isHovered
 
   return (
     <Float
-      speed={reduced ? 0 : 1.2}
-      rotationIntensity={reduced ? 0 : 0.3}
-      floatIntensity={reduced ? 0 : 0.9}
+      speed={reduced ? 0 : 1.1}
+      rotationIntensity={reduced ? 0 : 0.25}
+      floatIntensity={reduced ? 0 : 0.8}
       position={position}
     >
       <group>
@@ -50,7 +77,7 @@ function ProjectSpatialNode({
             onHover(project)
           }}
           onPointerOut={() => onHover(null)}
-          scale={isSelected ? 1.6 : isHovered ? 1.3 : 1}
+          scale={isSelected ? 1.5 : isHovered ? 1.25 : 1}
         >
           <octahedronGeometry args={[0.22, 0]} />
           <meshStandardMaterial
@@ -68,166 +95,203 @@ function ProjectSpatialNode({
           distance={3.5}
         />
 
-        {/* Interactive 3D Spatial Card (completely unmounted while modal is open) */}
+        {/* Interactive 3D Spatial Presentation (completely unmounted while modal is open) */}
         {!modalOpen && (
           <Html
             center
-            distanceFactor={6.2}
             position={[0, 0, 0]}
-            zIndexRange={[200, 0]}
-            zIndexRange={[200, 0]}
+            zIndexRange={[250, 0]}
             style={{
-              transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-              opacity: filterMatch ? 1 : 0.25,
+              transition: 'opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+              opacity: filterMatch ? 1 : 0.2,
               pointerEvents: filterMatch ? 'auto' : 'none',
             }}
           >
-          <div
-            onClick={(e) => {
-              e.stopPropagation()
-              playSyntheticSound('click')
-              onSelect(project)
-            }}
-            onMouseEnter={() => {
-              playSyntheticSound('tick')
-              onHover(project)
-            }}
-            onMouseLeave={() => onHover(null)}
-            className={`cursor-pointer transition-all duration-300 select-none ${
-              isSelected
-                ? 'scale-110 z-50'
-                : isHovered
-                ? 'scale-105 z-40'
-                : 'hover:scale-102 opacity-90'
-            }`}
-            style={{ width: '270px' }}
-          >
-            <div
-              className="relative p-3 rounded-2xl backdrop-blur-xl border transition-all duration-300 shadow-2xl overflow-hidden group"
-              style={{
-                backgroundColor: isSelected
-                  ? 'rgba(10, 16, 14, 0.94)'
-                  : isHovered
-                  ? 'rgba(12, 20, 17, 0.90)'
-                  : 'rgba(6, 10, 8, 0.82)',
-                borderColor: isSelected
-                  ? project.color
-                  : isHovered
-                  ? 'rgba(255, 255, 255, 0.32)'
-                  : 'rgba(255, 255, 255, 0.10)',
-                boxShadow: isSelected
-                  ? `0 0 38px ${project.color}45, 0 20px 40px rgba(0,0,0,0.85)`
-                  : isHovered
-                  ? `0 0 26px ${project.color}30, 0 16px 30px rgba(0,0,0,0.75)`
-                  : '0 10px 25px rgba(0,0,0,0.65)',
-              }}
-            >
-              {/* Holographic dynamic sheen */}
+            {showExpanded ? (
+              /* Foreground: Full Interactive 3D Card (crisp, fixed width, NEVER scaled to gigantic proportions) */
               <div
-                className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                style={{ mixBlendMode: 'overlay' }}
-              />
-
-              {/* Sci-fi corner brackets */}
-              <div className="absolute top-1.5 left-1.5 w-1.5 h-1.5 border-t border-l border-white/20 pointer-events-none" />
-              <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 border-t border-r border-white/20 pointer-events-none" />
-              <div className="absolute bottom-1.5 left-1.5 w-1.5 h-1.5 border-b border-l border-white/20 pointer-events-none" />
-              <div className="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 border-b border-r border-white/20 pointer-events-none" />
-              {/* Card Header */}
-              <div className="flex items-center justify-between mb-2">
-                <span
-                  className="font-mono text-[10px] font-bold tracking-widest px-1.5 py-0.5 rounded"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  playSyntheticSound('click')
+                  onSelect(project)
+                }}
+                onMouseEnter={() => {
+                  playSyntheticSound('tick')
+                  onHover(project)
+                }}
+                onMouseLeave={() => onHover(null)}
+                className={`cursor-pointer transition-all duration-300 select-none ${
+                  isSelected
+                    ? 'scale-105 z-50 ring-1 ring-[#c8f53c]/60'
+                    : isHovered
+                    ? 'scale-102 z-40'
+                    : 'hover:scale-102 opacity-95'
+                }`}
+                style={{ width: '232px' }}
+              >
+                <div
+                  className="relative p-2.5 rounded-2xl backdrop-blur-xl border transition-all duration-300 shadow-2xl overflow-hidden group"
                   style={{
-                    backgroundColor: `${project.color}18`,
-                    color: project.color,
+                    backgroundColor: isSelected
+                      ? '#0d1712'
+                      : isHovered
+                      ? '#0b130f'
+                      : '#080d0a',
+                    borderColor: isSelected
+                      ? project.color
+                      : isHovered
+                      ? 'rgba(255, 255, 255, 0.32)'
+                      : 'rgba(255, 255, 255, 0.12)',
+                    boxShadow: isSelected
+                      ? `0 0 38px ${project.color}45, 0 20px 40px rgba(0,0,0,0.85)`
+                      : isHovered
+                      ? `0 0 26px ${project.color}30, 0 16px 30px rgba(0,0,0,0.75)`
+                      : '0 10px 25px rgba(0,0,0,0.65)',
                   }}
+                >
+                  {/* Holographic dynamic sheen */}
+                  <div
+                    className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    style={{ mixBlendMode: 'overlay' }}
+                  />
+
+                  {/* Sci-fi corner brackets */}
+                  <div className="absolute top-1.5 left-1.5 w-1.5 h-1.5 border-t border-l border-white/20 pointer-events-none" />
+                  <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 border-t border-r border-white/20 pointer-events-none" />
+                  <div className="absolute bottom-1.5 left-1.5 w-1.5 h-1.5 border-b border-l border-white/20 pointer-events-none" />
+                  <div className="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 border-b border-r border-white/20 pointer-events-none" />
+
+                  {/* Card Header */}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span
+                      className="font-mono text-[9.5px] font-bold tracking-widest px-1.5 py-0.5 rounded"
+                      style={{
+                        backgroundColor: `${project.color}18`,
+                        color: project.color,
+                      }}
+                    >
+                      {project.num}
+                    </span>
+                    <span className="font-mono text-[8.5px] uppercase tracking-wider text-white/50">
+                      {project.category}
+                    </span>
+                  </div>
+
+                  {/* Card Visual Preview */}
+                  <div className="w-full h-20 rounded-lg overflow-hidden border border-white/10 mb-2">
+                    <ProjectThumbnail project={project} compact={true} />
+                  </div>
+
+                  {/* Project Title & Short Subtitle */}
+                  <h3 className="font-display font-semibold text-[12.5px] text-white line-clamp-1 leading-snug">
+                    {project.title}
+                  </h3>
+                  <p className="text-[10px] text-white/60 line-clamp-1 mt-0.5 font-sans">
+                    {project.subtitle}
+                  </p>
+
+                  {/* Stack Chips */}
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {project.stack.slice(0, 3).map((st) => (
+                      <span
+                        key={st}
+                        className="font-mono text-[7.5px] px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-white/70"
+                      >
+                        {st}
+                      </span>
+                    ))}
+                    {project.stack.length > 3 && (
+                      <span className="font-mono text-[7.5px] px-1 py-0.5 text-white/40">
+                        +{project.stack.length - 3}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Direct Clickable Action Row on Card */}
+                  <div className="mt-2 pt-1.5 border-t border-white/10 flex items-center justify-between gap-1 font-mono text-[9.5px]">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        onSelect(project)
+                      }}
+                      className="px-2 py-0.5 rounded font-semibold transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+                      style={{
+                        backgroundColor: isHovered || isSelected ? project.color : 'rgba(255,255,255,0.12)',
+                        color: isHovered || isSelected ? '#000' : '#fff',
+                      }}
+                    >
+                      Case Study →
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {project.link && project.link.startsWith('http') && (
+                        <a
+                          href={project.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-1.5 py-0.5 rounded border border-white/20 bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer flex items-center gap-0.5 text-[8.5px] font-semibold"
+                          title={`Launch ${project.title}`}
+                        >
+                          <span>Live</span>
+                          <span>↗</span>
+                        </a>
+                      )}
+
+                      {project.github && (
+                        <a
+                          href={project.github}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="px-1.5 py-0.5 rounded border border-white/15 bg-white/5 hover:bg-white/15 text-white/70 hover:text-white transition-all cursor-pointer text-[8.5px]"
+                          title="GitHub Repository"
+                        >
+                          GH ↗
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Background: Sleek Celestial Beacon Pill (Zero Overlapping / Clean Depth) */
+              <div
+                onClick={(e) => {
+                  e.stopPropagation()
+                  playSyntheticSound('click')
+                  onSelect(project)
+                }}
+                onMouseEnter={() => {
+                  playSyntheticSound('tick')
+                  onHover(project)
+                }}
+                onMouseLeave={() => onHover(null)}
+                className="group/beacon flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#050906]/92 border border-white/15 hover:border-[#c8f53c] backdrop-blur-xl transition-all duration-300 cursor-pointer shadow-lg hover:scale-105 select-none whitespace-nowrap"
+                style={{
+                  boxShadow: `0 0 14px ${project.color}25, 0 4px 10px rgba(0,0,0,0.85)`
+                }}
+              >
+                <span
+                  className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0"
+                  style={{ backgroundColor: project.color }}
+                />
+                <span
+                  className="font-mono text-[9px] font-bold tracking-wider"
+                  style={{ color: project.color }}
                 >
                   {project.num}
                 </span>
-                <span className="font-mono text-[9px] uppercase tracking-wider text-white/50">
-                  {project.category}
+                <span className="font-display text-[11px] text-white/80 group-hover/beacon:text-white font-medium">
+                  {project.title}
+                </span>
+                <span className="font-mono text-[8px] uppercase tracking-wider text-white/40">
+                  {project.category.split(' ')[0]}
                 </span>
               </div>
-
-              {/* Card Visual Preview */}
-              <div className="w-full h-28 rounded-lg overflow-hidden border border-white/10 mb-2.5">
-                <ProjectThumbnail project={project} compact={true} />
-              </div>
-
-              {/* Project Title & Short Subtitle */}
-              <h3 className="font-display font-semibold text-sm text-white line-clamp-1 leading-snug">
-                {project.title}
-              </h3>
-              <p className="text-[11px] text-white/60 line-clamp-1 mt-0.5 font-sans">
-                {project.subtitle}
-              </p>
-
-              {/* Stack Chips */}
-              <div className="flex flex-wrap gap-1 mt-2.5">
-                {project.stack.slice(0, 3).map((st) => (
-                  <span
-                    key={st}
-                    className="font-mono text-[8.5px] px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-white/70"
-                  >
-                    {st}
-                  </span>
-                ))}
-                {project.stack.length > 3 && (
-                  <span className="font-mono text-[8.5px] px-1 py-0.5 text-white/40">
-                    +{project.stack.length - 3}
-                  </span>
-                )}
-              </div>
-
-              {/* Direct Clickable Action Row on Card */}
-              <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between gap-1.5 font-mono text-[10px]">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onSelect(project)
-                  }}
-                  className="px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
-                  style={{
-                    backgroundColor: isHovered || isSelected ? project.color : 'rgba(255,255,255,0.12)',
-                    color: isHovered || isSelected ? '#000' : '#fff',
-                  }}
-                >
-                  Case Study →
-                </button>
-
-                <div className="flex items-center gap-1">
-                  {project.link && project.link.startsWith('http') && (
-                    <a
-                      href={project.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="px-2 py-1 rounded-md border border-white/20 bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer flex items-center gap-1 text-[9px] font-semibold"
-                      title={`Launch ${project.title}`}
-                    >
-                      <span>Live</span>
-                      <span>↗</span>
-                    </a>
-                  )}
-
-                  {project.github && (
-                    <a
-                      href={project.github}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="px-2 py-1 rounded-md border border-white/15 bg-white/5 hover:bg-white/15 text-white/70 hover:text-white transition-all cursor-pointer text-[9px]"
-                      title="GitHub Repository"
-                    >
-                      GH ↗
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </Html>
+            )}
+          </Html>
         )}
       </group>
     </Float>
@@ -300,23 +364,15 @@ function CosmicParticles({ count = 800, reduced = false }) {
 }
 
 /**
- * Camera Zoom Controller Bridge between UI Neon Scrollbar and Three.js OrbitControls
+ * Camera Zoom Controller Bridge: smoothly dollys the camera to targetDistance
  */
 function CameraZoomBridge({ targetDistance, controlsRef }) {
   const { camera } = useThree()
-  const targetDistRef = useRef(targetDistance)
-
-  // Update target distance ref whenever slider or +/- buttons change
-  useEffect(() => {
-    if (targetDistance != null) {
-      targetDistRef.current = targetDistance
-    }
-  }, [targetDistance])
 
   // Smoothly lerp camera to targetDistance in the render loop with buttery 60fps motion
   useFrame(() => {
     const controls = controlsRef.current
-    if (!controls || targetDistRef.current == null) return
+    if (!controls || targetDistance == null) return
 
     const target = controls.target || new THREE.Vector3(0, 0.05, 0)
     const offset = new THREE.Vector3().subVectors(camera.position, target)
@@ -324,14 +380,14 @@ function CameraZoomBridge({ targetDistance, controlsRef }) {
 
     if (currentDist < 0.001) return
 
-    const diff = Math.abs(currentDist - targetDistRef.current)
+    const diff = Math.abs(currentDist - targetDistance)
     if (diff > 0.02) {
-      const nextDist = THREE.MathUtils.lerp(currentDist, targetDistRef.current, 0.25)
+      const nextDist = THREE.MathUtils.lerp(currentDist, targetDistance, 0.20)
       offset.setLength(nextDist)
       camera.position.copy(target).add(offset)
       controls.update()
-    } else if (diff > 0.002) {
-      offset.setLength(targetDistRef.current)
+    } else if (diff > 0.003) {
+      offset.setLength(targetDistance)
       camera.position.copy(target).add(offset)
       controls.update()
     }
@@ -357,16 +413,15 @@ export default function ProjectUniverseScene({
 }) {
   const controlsRef = useRef(null)
 
-  // Distribute projects in an elevated 3D celestial ellipse / constellation with ample breathing room
+  // Distribute projects in a wide 3D celestial orbit with alternating upper/lower heights
+  // Alternating heights (+0.52 and -0.48) ensures neighboring nodes never collide horizontally!
   const positions = useMemo(() => {
     const total = projects.length
     return projects.map((_, i) => {
-      // Wide circular celestial orbit with comfortable spacing between all cards
       const angle = (i / total) * Math.PI * 2
-      const radius = 6.2 + (i % 2 === 0 ? 0.35 : -0.35)
-      // Height positioned in lower-mid tier well clear of top HUD
-      const height = -0.18 + ((i % 3) - 1) * 0.32 + Math.sin(i * 1.5) * 0.1
-      const zOffset = Math.sin(angle) * radius * 0.92
+      const radius = 7.2
+      const height = i % 2 === 0 ? 0.52 : -0.48
+      const zOffset = Math.sin(angle) * radius
 
       return [
         Math.cos(angle) * radius,
@@ -429,19 +484,22 @@ export default function ProjectUniverseScene({
           )
         })}
 
-        {/* Orbit / Pan controls with zoom exclusively driven by the Neon Zoom HUD */}
+        {/* Orbit / Pan controls with smooth wheel & pinch zoom enabled */}
         <OrbitControls
           ref={controlsRef}
           enableDamping
           dampingFactor={0.06}
           rotateSpeed={0.65}
-          enableZoom={false}
+          enableZoom={true}
+          zoomSpeed={0.8}
+          minDistance={4.8}
+          maxDistance={13.5}
           maxPolarAngle={Math.PI / 1.85}
           minPolarAngle={Math.PI / 3.4}
           target={[0, 0.05, 0]}
         />
 
-        {/* Dynamic Zoom Bridge for Neon Zoom Scrollbar */}
+        {/* Dynamic Bidirectional Zoom Bridge */}
         <CameraZoomBridge
           targetDistance={zoomDistance}
           controlsRef={controlsRef}
