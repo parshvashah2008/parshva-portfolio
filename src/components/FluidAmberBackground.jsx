@@ -479,13 +479,13 @@ export default function FluidAmberBackground({
         p2: [p2.x, p2.y],
         vel: [velX, velY],
         radius,
-        intensity: Math.min(1.65, 0.42 + speed * 2.1),
+        intensity: Math.min(1.75, 0.86 + speed * 2.8),
       })
     }
 
     function THREE_WAY_RADIUS(speed) {
       // Dynamic radius scaling: faster swipes produce a wider, billowing amber plume
-      return Math.min(0.068, 0.032 + speed * 0.045)
+      return Math.min(0.070, 0.040 + speed * 0.045)
     }
 
     const handlePointerMove = (e) => {
@@ -507,6 +507,9 @@ export default function FluidAmberBackground({
             dist
           )
         }
+      } else {
+        // Seed initial luminous amber ember on entry so text inversion never sits on dark canvas
+        addSplat({ x: nx, y: ny }, { x: nx, y: ny }, 0, 0, 0.012)
       }
 
       pointer.x = nx

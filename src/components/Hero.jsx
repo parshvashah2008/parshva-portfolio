@@ -149,31 +149,33 @@ function InvertibleHeroTypography({ reduced }) {
       const dy = y - lastY
       const dist = Math.hypot(dx, dy)
 
-      // Match bright luminous golden core width strictly so black ink only sits over bright gold
-      const baseR = Math.min(72, 42 + dist * 0.35)
+      // Strictly track only the bright luminous amber core (2D blur + dissipation decays fast)
+      const fluidH = container.closest('[data-fluid-bg]')?.clientHeight || window.innerHeight || 760
+      const minCoreR = Math.max(30, Math.round(fluidH * 0.044))
+      const baseR = Math.min(58, minCoreR + dist * 0.22)
       const steps = Math.max(1, Math.min(6, Math.ceil(dist / 16)))
-      const vx = Math.max(-90, Math.min(90, dx * 2.2))
-      const vy = Math.max(-90, Math.min(90, dy * 2.2))
+      const vx = Math.max(-70, Math.min(70, dx * 1.4))
+      const vy = Math.max(-70, Math.min(70, dy * 1.4))
+      const initialAlpha = Math.min(1.0, 0.76 + dist * 0.018)
 
       for (let s = 1; s <= steps; s++) {
         const t = s / steps
         stamps.push({
           x: lastX + dx * t,
           y: lastY + dy * t,
-          vx: vx * 0.42,
-          vy: vy * 0.42,
+          vx: vx * 0.3,
+          vy: vy * 0.3,
           baseR,
           r: baseR,
-          alpha: 1.0,
-          decay: 1.55, // Burns back to ivory in sync with WebGL bright-core dissipation
+          alpha: initialAlpha,
         })
       }
 
       lastX = x
       lastY = y
 
-      if (stamps.length > 26) {
-        stamps.splice(0, stamps.length - 26)
+      if (stamps.length > 16) {
+        stamps.splice(0, stamps.length - 16)
       }
     }
 
@@ -206,15 +208,14 @@ function InvertibleHeroTypography({ reduced }) {
 
       for (let i = stamps.length - 1; i >= 0; i--) {
         const st = stamps[i]
-        st.alpha -= dt * st.decay
-        // Upward thermal smoke drift + damped pointer momentum (mirrors WebGL advection)
+        // Exponential + 2D diffusion attenuation matching WebGL peak bright-core lifetime
+        st.alpha *= Math.exp(-5.8 * dt)
         st.x += st.vx * dt
-        st.y += (st.vy - 24) * dt
-        st.vx *= 0.94
-        st.vy *= 0.94
-        // Contract radius cleanly as bright amber core cools so dark text never sits on dark bronze
-        st.r = st.baseR * (0.35 + 0.65 * Math.max(0, st.alpha))
-        if (st.alpha <= 0.36) {
+        st.y += st.vy * dt
+        st.vx *= 0.90
+        st.vy *= 0.90
+        st.r = st.baseR * (0.25 + 0.75 * Math.max(0, st.alpha))
+        if (st.alpha <= 0.42) {
           st.alpha = 0
           stamps.splice(i, 1)
         }
@@ -231,8 +232,8 @@ function InvertibleHeroTypography({ reduced }) {
         const r = Math.max(8, Math.round(p.r))
         const rx = Math.round(p.x)
         const ry = Math.round(p.y)
-        const coreStrength = p.alpha > 0.46 ? '1' : Math.max(0, (p.alpha - 0.36) / 0.1).toFixed(3)
-        return `radial-gradient(circle ${r}px at ${rx}px ${ry}px, rgba(0,0,0,${coreStrength}) 0%, rgba(0,0,0,${coreStrength}) 58%, transparent 76%)`
+        const coreStrength = p.alpha > 0.62 ? '1' : Math.max(0, (p.alpha - 0.42) / 0.2).toFixed(3)
+        return `radial-gradient(circle ${r}px at ${rx}px ${ry}px, rgba(0,0,0,${coreStrength}) 0%, rgba(0,0,0,${coreStrength}) 48%, transparent 72%)`
       })
 
       // Overlay reveals ink-black text inside active bright amber trail
