@@ -8,9 +8,9 @@ import { playSyntheticSound } from '../utils/soundFX'
 
 const FILTERS = ['All', 'AI & Machine Learning', 'Web Development', 'SaaS & Products', 'Experiments']
 
-const MIN_ZOOM_DIST = 8.0
-const MAX_ZOOM_DIST = 23.0
-const DEFAULT_ZOOM_DIST = 18.6
+const MIN_ZOOM_DIST = 4.5
+const MAX_ZOOM_DIST = 22.0
+const DEFAULT_ZOOM_DIST = 16.2
 
 function distToPercent(dist) {
   const clamped = Math.max(MIN_ZOOM_DIST, Math.min(MAX_ZOOM_DIST, dist))
@@ -188,7 +188,7 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
               {/* Left Control Hint */}
               <div className="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-full bg-black/85 border border-white/15 backdrop-blur-xl font-mono text-[11px] text-white/70 shadow-lg">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#c8f53c] animate-pulse" />
-                <span>Drag to orbit · Scroll to zoom</span>
+                <span>360° Sphere · Drag to orbit · Scroll to zoom</span>
               </div>
 
               {/* Spatial Neon Zoom Scroll Bar HUD */}

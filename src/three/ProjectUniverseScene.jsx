@@ -6,171 +6,147 @@ import ProjectThumbnail from '../components/ProjectThumbnail'
 import { playSyntheticSound } from '../utils/soundFX'
 
 /**
- * 3D Celestial Sphere + Circular Orbit Layout.
- * Distributes all 8 project cards along a circular/spherical 3D orbit surrounding
- * a central architectural wireframe sphere & rotating armillary rings, with ZERO overlap.
+ * Enclosing 3D Celestial Sphere + Inner Spherical Lattice Layout.
+ * Places ALL 8 project cards cleanly INSIDE a large glowing 3D geodesic sphere
+ * using balanced antiprism spherical coordinates so every project sits inside
+ * the sphere volume and remains viewable & interactive across a full 360° orbit.
  */
-const RADIUS_X = 11.4
-const RADIUS_Y = 2.72
-const RADIUS_Z = 2.40
-const CENTER_Y = 3.42
+const SPHERE_RADIUS = 5.45
+const INNER_CARD_RADIUS = 3.98
 
-// Perspective-compensated angular intervals around the 3D circle so projected spacing
-// around left, right, upper, and lower arcs remains balanced with zero card overlap.
-const ORBIT_ANGLES_DEG = [0, 35, 86, 142, 180, 218, 274, 325]
+// Balanced 3-ring spherical lattice inside the enclosing wireframe sphere:
+// - 3 staggered equatorial nodes (120° apart)
+// - 3 staggered upper-hemisphere crown nodes (120° apart)
+// - 2 balanced lower-hemisphere nodes (180° apart)
+// Guarantees >=118px front separation at 0°..360° while staying inside the sphere shell.
+const INNER_SPHERE_SLOTS = [
+  [0.040, 0.000, 0.960],   // 01: Front center equator spotlight
+  [-0.955, -0.063, 0.260], // 02: Left-front equator
+  [0.741, -0.063, -0.666], // 03: Back-right equator
+  [-0.500, 0.645, 0.560],  // 04: Upper front-left crown
+  [0.680, 0.645, 0.320],   // 05: Upper front-right crown
+  [-0.352, 0.616, -0.673], // 06: Upper back-left crown
+  [-0.565, -0.641, -0.528],// 07: Lower back-left pole
+  [0.720, -0.540, 0.400],  // 08: Lower front-right pole
+]
 
 /**
- * Computes responsive circular/spherical orbit metrics so all 8 cards remain visible
- * across desktop, tablet, and narrow mobile screens without horizontal clipping.
+ * Computes responsive enclosing sphere & inner card lattice metrics across
+ * desktop, tablet, and narrow mobile viewports.
  */
 function getResponsiveOrbit(canvasWidth) {
   const isMobile = canvasWidth < 640
-  const rxScale = canvasWidth >= 1080 ? 1 : Math.max(0.36, canvasWidth / 1120)
-  const cardScale = isMobile ? 0.48 : canvasWidth < 920 ? 0.78 : 1.0
+  const isTablet = canvasWidth < 960
   return {
-    radiusX: isMobile ? 3.55 : RADIUS_X * rxScale,
-    radiusY: isMobile ? 2.75 : RADIUS_Y,
-    radiusZ: isMobile ? 1.85 : RADIUS_Z,
-    centerY: isMobile ? 3.35 : CENTER_Y,
-    cardScale,
+    sphereRadius: isMobile ? 4.35 : SPHERE_RADIUS,
+    innerRadius: isMobile ? 3.05 : INNER_CARD_RADIUS,
+    cardScale: isMobile ? 0.45 : isTablet ? 0.62 : 0.72,
   }
 }
 
 function getSlotPositions(metrics) {
-  return ORBIT_ANGLES_DEG.map((deg) => {
-    const theta = (deg * Math.PI) / 180
-    return [
-      Number((metrics.radiusX * Math.sin(theta)).toFixed(3)),
-      Number((metrics.centerY - metrics.radiusY * Math.cos(theta)).toFixed(3)),
-      Number((metrics.radiusZ * Math.cos(theta)).toFixed(3)),
-    ]
-  })
+  return INNER_SPHERE_SLOTS.map(([ux, uy, uz]) => [
+    Number((metrics.innerRadius * ux).toFixed(3)),
+    Number((metrics.innerRadius * uy).toFixed(3)),
+    Number((metrics.innerRadius * uz).toFixed(3)),
+  ])
 }
 
 /**
- * Visual 3D Celestial Sphere & Circular Orbit Path
- * Renders the central rotating wireframe globe, armillary meridian rings, and the outer
- * glowing orbital halo traced by the 8 project cards in 3D space.
+ * Enclosing 3D Celestial Wireframe Sphere, Gimbal Rings & Radial Anchor Tethers
+ * Encompasses all 8 inner-sphere project cards across full 360° camera rotation.
  */
 function CelestialOrbitRing({ reduced = false }) {
   const { size } = useThree()
   const metrics = useMemo(() => getResponsiveOrbit(size.width), [size.width])
   const sphereGroupRef = useRef(null)
 
-  const sphereRadius = useMemo(
-    () => Math.min(metrics.radiusY * 0.78, metrics.radiusX * 0.21),
-    [metrics.radiusX, metrics.radiusY]
-  )
-
+  const sphereRadius = metrics.sphereRadius
   const slotPoints = useMemo(() => getSlotPositions(metrics), [metrics])
 
-  const lineGeometry = useMemo(() => {
+  const tetherGeometry = useMemo(() => {
     const pts = []
-    const segments = 128
-    for (let i = 0; i <= segments; i++) {
-      const theta = (i / segments) * Math.PI * 2
-      const x = metrics.radiusX * Math.sin(theta)
-      const y = metrics.centerY - metrics.radiusY * Math.cos(theta)
-      const z = metrics.radiusZ * Math.cos(theta)
-      pts.push(new THREE.Vector3(x, y, z))
-    }
+    slotPoints.forEach((pos) => {
+      pts.push(new THREE.Vector3(0, 0, 0))
+      pts.push(new THREE.Vector3(pos[0], pos[1], pos[2]))
+    })
     return new THREE.BufferGeometry().setFromPoints(pts)
-  }, [metrics])
+  }, [slotPoints])
 
   useFrame((state, delta) => {
     if (!sphereGroupRef.current || reduced) return
-    sphereGroupRef.current.rotation.y += delta * 0.14
-    sphereGroupRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.22) * 0.14
+    sphereGroupRef.current.rotation.y += delta * 0.09
+    sphereGroupRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.16) * 0.08
   })
 
   return (
-    <group>
-      {/* Primary ethereal neon circular orbit track */}
-      <line geometry={lineGeometry}>
-        <lineBasicMaterial
-          color="#c8f53c"
-          transparent
-          opacity={0.38}
-          blending={THREE.AdditiveBlending}
-        />
-      </line>
-
-      {/* Atmospheric secondary halo ring */}
-      <line geometry={lineGeometry} scale={[1.018, 1.018, 1.018]}>
+    <group position={[0, 0, 0]}>
+      {/* Hairline radial anchor filaments connecting sphere center to each project node */}
+      <lineSegments geometry={tetherGeometry}>
         <lineBasicMaterial
           color="#4a785d"
           transparent
-          opacity={0.2}
+          opacity={0.16}
           blending={THREE.AdditiveBlending}
         />
-      </line>
+      </lineSegments>
 
-      {/* Pinpoint orbital slot nodes on the outer circle */}
+      {/* Pinpoint glowing node anchors inside the sphere */}
       {slotPoints.map((pos, idx) => (
         <mesh key={idx} position={pos}>
-          <sphereGeometry args={[0.042, 10, 10]} />
+          <sphereGeometry args={[0.048, 10, 10]} />
           <meshBasicMaterial
             color="#c8f53c"
             transparent
-            opacity={0.45}
+            opacity={0.55}
             blending={THREE.AdditiveBlending}
           />
         </mesh>
       ))}
 
-      {/* Central Architectural 3D Wireframe Sphere & Armillary Rings */}
-      <group ref={sphereGroupRef} position={[0, metrics.centerY, 0]}>
-        {/* Deep translucent spherical core */}
+      {/* Large Enclosing 3D Geodesic Wireframe Sphere & Armillary Rings */}
+      <group ref={sphereGroupRef}>
+        {/* Deep translucent inner cosmic lens shell (back-face only so front cards stay vivid) */}
         <mesh>
-          <sphereGeometry args={[sphereRadius * 0.96, 32, 24]} />
+          <sphereGeometry args={[sphereRadius * 0.99, 36, 24]} />
           <meshBasicMaterial
-            color="#07150e"
+            color="#06140c"
+            side={THREE.BackSide}
             transparent
-            opacity={0.38}
+            opacity={0.42}
             depthWrite={false}
           />
         </mesh>
 
-        {/* Fine geodesic latitude/longitude wireframe globe */}
+        {/* Primary enclosing latitude/longitude wireframe sphere */}
         <mesh>
-          <sphereGeometry args={[sphereRadius, 28, 18]} />
+          <sphereGeometry args={[sphereRadius, 32, 20]} />
           <meshBasicMaterial
             color="#4a785d"
             wireframe
             transparent
-            opacity={0.22}
+            opacity={0.20}
             depthWrite={false}
             blending={THREE.AdditiveBlending}
           />
         </mesh>
 
-        {/* Secondary sparse lime meridian wireframe lattice */}
-        <mesh rotation={[0.25, 0.4, 0]}>
-          <sphereGeometry args={[sphereRadius * 1.006, 16, 10]} />
+        {/* Secondary sparse neon meridian wireframe dome */}
+        <mesh rotation={[0.24, 0.42, 0]}>
+          <sphereGeometry args={[sphereRadius * 1.004, 16, 10]} />
           <meshBasicMaterial
             color="#c8f53c"
             wireframe
             transparent
-            opacity={0.11}
+            opacity={0.08}
             depthWrite={false}
             blending={THREE.AdditiveBlending}
           />
         </mesh>
 
-        {/* Luminous nucleus core */}
+        {/* Luminous nucleus core at sphere origin */}
         <mesh>
-          <sphereGeometry args={[sphereRadius * 0.09, 16, 16]} />
-          <meshBasicMaterial
-            color="#c8f53c"
-            transparent
-            opacity={0.30}
-            blending={THREE.AdditiveBlending}
-          />
-        </mesh>
-
-        {/* Smooth equatorial, prime meridian & tilted ecliptic orbital rings */}
-        <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[sphereRadius * 1.12, 0.013, 12, 96]} />
+          <sphereGeometry args={[0.24, 16, 16]} />
           <meshBasicMaterial
             color="#c8f53c"
             transparent
@@ -178,21 +154,32 @@ function CelestialOrbitRing({ reduced = false }) {
             blending={THREE.AdditiveBlending}
           />
         </mesh>
+
+        {/* Enclosing equatorial, prime meridian & tilted orbital gimbal rings */}
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[sphereRadius * 1.02, 0.015, 12, 128]} />
+          <meshBasicMaterial
+            color="#c8f53c"
+            transparent
+            opacity={0.32}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
         <mesh rotation={[0, 0, 0]}>
-          <torusGeometry args={[sphereRadius * 1.06, 0.011, 12, 96]} />
+          <torusGeometry args={[sphereRadius * 1.01, 0.012, 12, 128]} />
           <meshBasicMaterial
             color="#4a785d"
             transparent
-            opacity={0.28}
+            opacity={0.26}
             blending={THREE.AdditiveBlending}
           />
         </mesh>
         <mesh rotation={[Math.PI / 3.1, Math.PI / 5, 0]}>
-          <torusGeometry args={[sphereRadius * 1.18, 0.01, 12, 96]} />
+          <torusGeometry args={[sphereRadius * 1.05, 0.011, 12, 128]} />
           <meshBasicMaterial
             color="#c8f53c"
             transparent
-            opacity={0.24}
+            opacity={0.22}
             blending={THREE.AdditiveBlending}
           />
         </mesh>
@@ -252,12 +239,13 @@ function ProjectSpatialNode({
     const nodePos = new THREE.Vector3()
     meshRef.current.getWorldPosition(nodePos)
     const dist = camera.position.distanceTo(nodePos)
+    const centerDist = camera.position.length()
 
-    // Depth scaling: front hero card is full size (1.05x), back cards scale gracefully (~0.72x)
-    const scale = THREE.MathUtils.clamp(1.05 - (dist - 16.2) * 0.062, 0.72, 1.05)
-    const opacity = THREE.MathUtils.clamp(1.0 - (dist - 16.2) * 0.032, 0.80, 1.0)
-    // Front cards have positive Z and higher zIndex than background cards
-    const zIndex = Math.round(150 + nodePos.z * 22)
+    // View-agnostic 360° depth scaling & opacity: front cards pop sharply; back cards recede smoothly
+    const relDepth = dist - centerDist
+    const scale = THREE.MathUtils.clamp(0.86 - relDepth * 0.06, 0.54, 1.04)
+    const opacity = THREE.MathUtils.clamp(0.92 - relDepth * 0.085, 0.44, 1.0)
+    const zIndex = Math.round(240 - dist * 7)
 
     if (Math.abs(scale - depthScale) > 0.015) setDepthScale(scale)
     if (Math.abs(opacity - depthOpacity) > 0.03) setDepthOpacity(opacity)
@@ -307,8 +295,8 @@ function ProjectSpatialNode({
                 isSelected ? 'ring-1 ring-[#c8f53c]/60' : ''
               }`}
               style={{
-                width: isSelected ? '182px' : '152px',
-                transform: `scale(${((isSelected || isHovered ? 1.06 : depthScale) * cardScale).toFixed(3)})`,
+                width: isSelected || isHovered ? '176px' : '150px',
+                transform: `scale(${((isSelected || isHovered ? 1.05 : depthScale) * cardScale).toFixed(3)})`,
                 transformOrigin: 'center center',
               }}
             >
@@ -513,28 +501,44 @@ function CosmicParticles({ count = 800, reduced = false }) {
 /**
  * Camera Zoom Controller Bridge: smoothly dollys the camera to targetDistance
  */
-function CameraZoomBridge({ targetDistance, controlsRef }) {
+function CameraZoomBridge({ targetDistance, focusDir, slewActiveRef, controlsRef }) {
   const { camera } = useThree()
 
-  // Smoothly lerp camera to targetDistance in the render loop with buttery 60fps motion
   useFrame(() => {
     const controls = controlsRef.current
-    if (!controls || targetDistance == null) return
+    if (!controls) return
 
-    const target = controls.target || new THREE.Vector3(0, 2.10, 0)
+    const target = controls.target || new THREE.Vector3(0, -0.25, 0)
     const offset = new THREE.Vector3().subVectors(camera.position, target)
     const currentDist = offset.length()
 
     if (currentDist < 0.001) return
 
-    const diff = Math.abs(currentDist - targetDistance)
-    if (diff > 0.02) {
-      const nextDist = THREE.MathUtils.lerp(currentDist, targetDistance, 0.20)
+    let nextDist = currentDist
+    if (targetDistance != null) {
+      const diff = Math.abs(currentDist - targetDistance)
+      if (diff > 0.02) {
+        nextDist = THREE.MathUtils.lerp(currentDist, targetDistance, 0.18)
+      } else if (diff > 0.003) {
+        nextDist = targetDistance
+      }
+    }
+
+    // Smoothly orbit 360° around sphere when a card/stepper selection requests focus
+    if (slewActiveRef.current && focusDir) {
+      const desiredOffset = focusDir.clone().multiplyScalar(nextDist)
+      offset.lerp(desiredOffset, 0.10)
       offset.setLength(nextDist)
+      if (offset.distanceTo(desiredOffset) < 0.18) {
+        slewActiveRef.current = false
+      }
       camera.position.copy(target).add(offset)
       controls.update()
-    } else if (diff > 0.003) {
-      offset.setLength(targetDistance)
+      return
+    }
+
+    if (nextDist !== currentDist) {
+      offset.setLength(nextDist)
       camera.position.copy(target).add(offset)
       controls.update()
     }
@@ -544,8 +548,8 @@ function CameraZoomBridge({ targetDistance, controlsRef }) {
 }
 
 /**
- * Constellation Carousel: Assigns each project to its dedicated amphitheater slot
- * and smoothly animates the active project into the Center Hero slot.
+ * Constellation Carousel: Maps all 8 projects cleanly onto permanent 3D spherical coordinates
+ * inside the enclosing wireframe sphere for true 360° spatial navigation.
  */
 function ConstellationCarousel({
   projects,
@@ -561,12 +565,6 @@ function ConstellationCarousel({
   const metrics = useMemo(() => getResponsiveOrbit(size.width), [size.width])
   const slotPositions = useMemo(() => getSlotPositions(metrics), [metrics])
 
-  const selectedIdx = useMemo(() => {
-    if (!activeProject || projects.length === 0) return 0
-    const idx = projects.findIndex((p) => p.id === activeProject.id)
-    return idx === -1 ? 0 : idx
-  }, [activeProject, projects])
-
   return (
     <group>
       {projects.map((p, idx) => {
@@ -576,9 +574,7 @@ function ConstellationCarousel({
           (activeFilter === 'Experiments' && p.category === 'Experiments') ||
           (activeFilter === 'AI & Machine Learning' && p.category.includes('AI'))
 
-        // Map each project to its relative circular orbit slot (Slot 0 = Center Hero spotlight)
-        const slotIdx = (idx - selectedIdx + projects.length) % projects.length
-        const targetPos = slotPositions[slotIdx % slotPositions.length]
+        const targetPos = slotPositions[idx % slotPositions.length]
 
         return (
           <ProjectSpatialNode
@@ -616,20 +612,37 @@ export default function ProjectUniverseScene({
   onDistanceChange,
 }) {
   const controlsRef = useRef(null)
+  const slewActiveRef = useRef(false)
+  const [isInteracting, setIsInteracting] = useState(false)
+  const prevActiveIdRef = useRef(activeProject?.id)
+
+  const focusDir = useMemo(() => {
+    if (!activeProject || projects.length === 0) return new THREE.Vector3(0, 0.04, 1).normalize()
+    const idx = projects.findIndex((p) => p.id === activeProject.id)
+    const [ux, uy, uz] = INNER_SPHERE_SLOTS[(idx === -1 ? 0 : idx) % INNER_SPHERE_SLOTS.length]
+    return new THREE.Vector3(ux, uy * 0.55 + 0.06, uz).normalize()
+  }, [activeProject, projects])
+
+  useEffect(() => {
+    if (activeProject?.id && prevActiveIdRef.current !== activeProject.id) {
+      prevActiveIdRef.current = activeProject.id
+      slewActiveRef.current = true
+    }
+  }, [activeProject])
 
   return (
     <Canvas
-      camera={{ position: [0, 2.24, 18.6], fov: 42 }}
+      camera={{ position: [0, 0.15, 16.2], fov: 42 }}
       dpr={[1, 1.8]}
       gl={{ antialias: true, alpha: true }}
       className="w-full h-full cursor-grab active:cursor-grabbing"
     >
       <color attach="background" args={['#040504']} />
-      <fog attach="fog" args={['#040504', 14, 30]} />
+      <fog attach="fog" args={['#040504', 18, 36]} />
 
       <ambientLight intensity={0.4} />
       <directionalLight position={[5, 8, 5]} intensity={0.7} color="#f4f1ea" />
-      <pointLight position={[0, 0, 0]} intensity={1.2} color="#c8f53c" distance={12} />
+      <pointLight position={[0, 0, 0]} intensity={1.2} color="#c8f53c" distance={14} />
 
       <Suspense fallback={null}>
         {/* Background stars */}
@@ -646,10 +659,10 @@ export default function ProjectUniverseScene({
         {/* Ambient nebular particle system */}
         <CosmicParticles count={900} reduced={reduced} />
 
-        {/* Visible 3D Celestial Orbit Ring Path */}
+        {/* Enclosing 3D Celestial Sphere & Armillary Gimbal Rings */}
         <CelestialOrbitRing reduced={reduced} />
 
-        {/* Interactive 3D Project Constellation Nodes in Circular Orbit */}
+        {/* Interactive 3D Project Nodes arranged symmetrically inside the sphere */}
         <ConstellationCarousel
           projects={projects}
           activeProject={activeProject}
@@ -661,28 +674,36 @@ export default function ProjectUniverseScene({
           modalOpen={modalOpen}
         />
 
-        {/* Orbit / Pan controls with smooth wheel & pinch zoom enabled */}
-        {/* Constrained azimuth & polar angles provide breathtaking 3D parallax without ever flipping cards sideways or backwards */}
+        {/* Full 360° Free Spherical Orbit & Inside-Sphere Zoom */}
         <OrbitControls
           ref={controlsRef}
           enableDamping
           dampingFactor={0.06}
-          rotateSpeed={0.65}
+          rotateSpeed={0.75}
           enablePan={false}
           enableZoom={true}
-          zoomSpeed={0.8}
-          minDistance={8.0}
-          maxDistance={23.0}
-          minAzimuthAngle={-Math.PI / 4.2}
-          maxAzimuthAngle={Math.PI / 4.2}
-          minPolarAngle={Math.PI / 2.6}
-          maxPolarAngle={Math.PI / 2.08}
-          target={[0, 2.10, 0]}
+          zoomSpeed={0.85}
+          autoRotate={!reduced && !isInteracting && !hoveredProject && !modalOpen}
+          autoRotateSpeed={0.42}
+          minDistance={4.5}
+          maxDistance={22.0}
+          minAzimuthAngle={-Infinity}
+          maxAzimuthAngle={Infinity}
+          minPolarAngle={0.22}
+          maxPolarAngle={Math.PI - 0.22}
+          target={[0, -0.25, 0]}
+          onStart={() => {
+            slewActiveRef.current = false
+            setIsInteracting(true)
+          }}
+          onEnd={() => setIsInteracting(false)}
         />
 
-        {/* Dynamic Bidirectional Zoom Bridge */}
+        {/* Dynamic Bidirectional Zoom & 360° Camera Focus Bridge */}
         <CameraZoomBridge
           targetDistance={zoomDistance}
+          focusDir={focusDir}
+          slewActiveRef={slewActiveRef}
           controlsRef={controlsRef}
         />
       </Suspense>
