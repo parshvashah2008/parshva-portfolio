@@ -13,33 +13,98 @@ import { playSyntheticSound } from '../utils/soundFX'
  * Calibrated vertical elevation guarantees clean clearance above the bottom dock bar,
  * and wide horizontal intervals guarantee zero occlusion between any adjacent cards!
  */
-const SLOT_POSITIONS = [
-  // 0: Center Hero (Selected focal project spotlight - elevated safely above bottom HUD dock)
-  [0, 1.05, 2.3],
-  // 1: Front Left
-  [-3.5, 1.05, 1.7],
-  // 2: Front Right
-  [3.5, 1.05, 1.7],
-  // 3: Upper Far Left
-  [-5.9, 2.75, -0.6],
-  // 4: Upper Mid Left
-  [-2.95, 2.85, -1.0],
-  // 5: Upper Center
-  [0, 2.95, -1.3],
-  // 6: Upper Mid Right
-  [2.95, 2.85, -1.0],
-  // 7: Upper Far Right
-  [5.9, 2.75, -0.6],
-]
+const RADIUS_X = 9.8
+const RADIUS_Y = 2.52
+const RADIUS_Z = 2.0
+const CENTER_Y = 2.90
+
+// Perspective-compensated angular intervals around the 3D circle so projected spacing
+// around left, right, upper, and lower arcs remains balanced with zero card overlap.
+const ORBIT_ANGLES_DEG = [0, 34, 82, 136, 180, 224, 278, 326]
+
+/**
+ * Computes responsive circular orbit metrics so all 8 cards remain visible
+ * across desktop, tablet, and narrow mobile screens without horizontal clipping.
+ */
+function getResponsiveOrbit(canvasWidth) {
+  const isMobile = canvasWidth < 640
+  const rxScale = canvasWidth >= 1040 ? 1 : Math.max(0.38, canvasWidth / 1080)
+  const cardScale = isMobile ? 0.50 : canvasWidth < 900 ? 0.82 : 1.0
+  return {
+    radiusX: isMobile ? 3.85 : RADIUS_X * rxScale,
+    radiusY: isMobile ? 2.85 : RADIUS_Y,
+    radiusZ: isMobile ? 1.5 : RADIUS_Z,
+    centerY: isMobile ? 3.05 : CENTER_Y,
+    cardScale,
+  }
+}
+
+function getSlotPositions(metrics) {
+  return ORBIT_ANGLES_DEG.map((deg) => {
+    const theta = (deg * Math.PI) / 180
+    return [
+      Number((metrics.radiusX * Math.sin(theta)).toFixed(3)),
+      Number((metrics.centerY - metrics.radiusY * Math.cos(theta)).toFixed(3)),
+      Number((metrics.radiusZ * Math.cos(theta)).toFixed(3)),
+    ]
+  })
+}
+
+/**
+ * Visual 3D Circular Orbit Ring
+ * Renders the glowing orbital halo path traced by the project cards in space.
+ */
+function CelestialOrbitRing({ reduced = false }) {
+  const { size } = useThree()
+  const metrics = useMemo(() => getResponsiveOrbit(size.width), [size.width])
+
+  const lineGeometry = useMemo(() => {
+    const pts = []
+    const segments = 128
+    for (let i = 0; i <= segments; i++) {
+      const theta = (i / segments) * Math.PI * 2
+      const x = metrics.radiusX * Math.sin(theta)
+      const y = metrics.centerY - metrics.radiusY * Math.cos(theta)
+      const z = metrics.radiusZ * Math.cos(theta)
+      pts.push(new THREE.Vector3(x, y, z))
+    }
+    return new THREE.BufferGeometry().setFromPoints(pts)
+  }, [metrics])
+
+  return (
+    <group>
+      {/* Primary ethereal neon orbit ring */}
+      <line geometry={lineGeometry}>
+        <lineBasicMaterial
+          color="#c8f53c"
+          transparent
+          opacity={0.35}
+          blending={THREE.AdditiveBlending}
+        />
+      </line>
+
+      {/* Atmospheric secondary halo */}
+      <line geometry={lineGeometry} scale={[1.015, 1.015, 1.015]}>
+        <lineBasicMaterial
+          color="#4a785d"
+          transparent
+          opacity={0.18}
+          blending={THREE.AdditiveBlending}
+        />
+      </line>
+    </group>
+  )
+}
 
 /**
  * 3D Project Node floating in spatial universe.
- * Renders full interactive 3D cards for ALL projects simultaneously.
- * Smoothly glides between amphitheater slots when a new project is selected.
+ * Renders full interactive 3D cards for ALL projects simultaneously along the circular orbit.
+ * Smoothly glides between orbit slots when a new project is selected.
  */
 function ProjectSpatialNode({
   project,
   targetPos,
+  cardScale = 1,
   active,
   hovered,
   onHover,
@@ -53,45 +118,41 @@ function ProjectSpatialNode({
   const isHovered = hovered?.id === project.id
   const [depthScale, setDepthScale] = useState(1)
   const [depthOpacity, setDepthOpacity] = useState(1)
-  const [depthZIndex, setDepthZIndex] = useState(30)
+  const [depthZIndex, setDepthZIndex] = useState(100)
 
-  // Real-time camera proximity tracking & smooth position interpolation
+  // Real-time camera proximity tracking & smooth position interpolation along the circle
   useFrame(({ camera }, delta) => {
     if (!meshRef.current) return
 
-    // Smoothly lerp towards assigned slot position
+    // Smoothly lerp towards assigned slot position on the 3D circle
     meshRef.current.position.x = THREE.MathUtils.damp(
       meshRef.current.position.x,
       targetPos[0],
-      5.2,
+      5.5,
       delta
     )
     meshRef.current.position.y = THREE.MathUtils.damp(
       meshRef.current.position.y,
       targetPos[1],
-      5.2,
+      5.5,
       delta
     )
     meshRef.current.position.z = THREE.MathUtils.damp(
       meshRef.current.position.z,
       targetPos[2],
-      5.2,
+      5.5,
       delta
     )
-
-    if (!reduced) {
-      meshRef.current.rotation.y += delta * 0.22
-      meshRef.current.rotation.x += delta * 0.12
-    }
 
     const nodePos = new THREE.Vector3()
     meshRef.current.getWorldPosition(nodePos)
     const dist = camera.position.distanceTo(nodePos)
 
-    // Smooth depth scaling so foreground cards are full-size and background cards are gracefully scaled
-    const scale = THREE.MathUtils.clamp(1.04 - (dist - 7.5) * 0.040, 0.78, 1.06)
-    const opacity = THREE.MathUtils.clamp(1.0 - (dist - 7.5) * 0.022, 0.82, 1.0)
-    const zIndex = Math.round(100 - dist * 5)
+    // Depth scaling: front hero card is full size (1.05x), back cards scale gracefully (~0.74x)
+    const scale = THREE.MathUtils.clamp(1.05 - (dist - 15.4) * 0.065, 0.74, 1.05)
+    const opacity = THREE.MathUtils.clamp(1.0 - (dist - 15.4) * 0.032, 0.82, 1.0)
+    // Front cards have positive Z and higher zIndex than background cards
+    const zIndex = Math.round(150 + nodePos.z * 22)
 
     if (Math.abs(scale - depthScale) > 0.015) setDepthScale(scale)
     if (Math.abs(opacity - depthOpacity) > 0.03) setDepthOpacity(opacity)
@@ -99,13 +160,12 @@ function ProjectSpatialNode({
   })
 
   return (
-    <Float
-      speed={reduced ? 0 : 1.1}
-      rotationIntensity={reduced ? 0 : 0.20}
-      floatIntensity={reduced ? 0 : 0.7}
-      position={targetPos}
-    >
-      <group ref={meshRef}>
+    <group ref={meshRef}>
+      <Float
+        speed={reduced ? 0 : 0.9}
+        rotationIntensity={0}
+        floatIntensity={reduced ? 0 : 0.35}
+      >
         {/* Ambient halo glow */}
         <pointLight
           color={project.color}
@@ -118,12 +178,12 @@ function ProjectSpatialNode({
           <Html
             center
             position={[0, 0, 0]}
-            zIndexRange={[250, 0]}
+            zIndexRange={[300, 0]}
             style={{
               transition: 'opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
               opacity: filterMatch ? (isHovered || isSelected ? 1 : depthOpacity) : 0.18,
               pointerEvents: filterMatch ? 'auto' : 'none',
-              zIndex: isHovered || isSelected ? 150 : depthZIndex,
+              zIndex: isHovered || isSelected ? 250 : depthZIndex,
             }}
           >
             {/* Full Interactive 3D Card: all projects rendered simultaneously */}
@@ -142,13 +202,13 @@ function ProjectSpatialNode({
                 isSelected ? 'ring-1 ring-[#c8f53c]/60' : ''
               }`}
               style={{
-                width: '190px',
-                transform: isSelected || isHovered ? 'scale(1.06)' : `scale(${depthScale})`,
+                width: isSelected ? '182px' : '152px',
+                transform: `scale(${((isSelected || isHovered ? 1.06 : depthScale) * cardScale).toFixed(3)})`,
                 transformOrigin: 'center center',
               }}
             >
               <div
-                className="relative p-2.5 rounded-2xl backdrop-blur-xl border transition-all duration-300 shadow-2xl overflow-hidden group"
+                className="relative p-2 rounded-xl backdrop-blur-xl border transition-all duration-300 shadow-2xl overflow-hidden group"
                 style={{
                   backgroundColor: isSelected
                     ? '#0d1712'
@@ -180,9 +240,9 @@ function ProjectSpatialNode({
                 <div className="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 border-b border-r border-white/20 pointer-events-none" />
 
                 {/* Card Header */}
-                <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center justify-between gap-1 mb-1">
                   <span
-                    className="font-mono text-[9.5px] font-bold tracking-widest px-1.5 py-0.5 rounded"
+                    className="font-mono text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded shrink-0"
                     style={{
                       backgroundColor: `${project.color}18`,
                       color: project.color,
@@ -190,50 +250,50 @@ function ProjectSpatialNode({
                   >
                     {project.num}
                   </span>
-                  <span className="font-mono text-[8.5px] uppercase tracking-wider text-white/50">
+                  <span className="font-mono text-[8px] uppercase tracking-wider text-white/50 truncate">
                     {project.category}
                   </span>
                 </div>
 
                 {/* Card Visual Preview */}
-                <div className="w-full h-18 rounded-lg overflow-hidden border border-white/10 mb-1.5">
+                <div className={`w-full ${isSelected ? 'h-14' : 'h-12'} rounded-lg overflow-hidden border border-white/10 mb-1.5`}>
                   <ProjectThumbnail project={project} compact={true} />
                 </div>
 
                 {/* Project Title & Short Subtitle */}
-                <h3 className="font-display font-semibold text-[12px] text-white line-clamp-1 leading-snug">
+                <h3 className="font-display font-semibold text-[11.5px] text-white line-clamp-1 leading-snug">
                   {project.title}
                 </h3>
-                <p className="text-[9.5px] text-white/60 line-clamp-1 mt-0.5 font-sans">
+                <p className="text-[9px] text-white/60 line-clamp-1 mt-0.5 font-sans">
                   {project.subtitle}
                 </p>
 
-                {/* Stack Chips */}
-                <div className="flex flex-wrap gap-1 mt-1.5">
-                  {project.stack.slice(0, 3).map((st) => (
+                {/* Single-row compact Stack Chips */}
+                <div className="flex items-center flex-nowrap gap-1 mt-1.5 overflow-hidden">
+                  {project.stack.slice(0, 2).map((st) => (
                     <span
                       key={st}
-                      className="font-mono text-[7px] px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-white/70"
+                      className="font-mono text-[7px] px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-white/70 whitespace-nowrap truncate"
                     >
                       {st}
                     </span>
                   ))}
-                  {project.stack.length > 3 && (
-                    <span className="font-mono text-[7px] px-1 py-0.5 text-white/40">
-                      +{project.stack.length - 3}
+                  {project.stack.length > 2 && (
+                    <span className="font-mono text-[7px] px-1 py-0.5 text-white/40 shrink-0">
+                      +{project.stack.length - 2}
                     </span>
                   )}
                 </div>
 
                 {/* Direct Clickable Action Row on Card */}
-                <div className="mt-2 pt-1.5 border-t border-white/10 flex items-center justify-between gap-1 font-mono text-[9px]">
+                <div className="mt-1.5 pt-1.5 border-t border-white/10 flex items-center justify-between gap-1 font-mono text-[7.5px]">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
                       onSelect(project)
                     }}
-                    className="px-2 py-0.5 rounded font-semibold transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+                    className="px-1.5 py-0.5 rounded font-semibold transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95 whitespace-nowrap shrink-0"
                     style={{
                       backgroundColor: isHovered || isSelected ? project.color : 'rgba(255,255,255,0.12)',
                       color: isHovered || isSelected ? '#000' : '#fff',
@@ -242,14 +302,14 @@ function ProjectSpatialNode({
                     Case Study →
                   </button>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5 shrink-0">
                     {project.link && project.link.startsWith('http') && (
                       <a
                         href={project.link}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="px-1.5 py-0.5 rounded border border-white/20 bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer flex items-center gap-0.5 text-[8px] font-semibold"
+                        className="px-1 py-0.5 rounded border border-white/20 bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer flex items-center gap-0.5 text-[7px] font-semibold whitespace-nowrap"
                         title={`Launch ${project.title}`}
                       >
                         <span>Live</span>
@@ -263,7 +323,7 @@ function ProjectSpatialNode({
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="px-1.5 py-0.5 rounded border border-white/15 bg-white/5 hover:bg-white/15 text-white/70 hover:text-white transition-all cursor-pointer text-[8px]"
+                        className="px-1 py-0.5 rounded border border-white/15 bg-white/5 hover:bg-white/15 text-white/70 hover:text-white transition-all cursor-pointer text-[7px] whitespace-nowrap"
                         title="GitHub Repository"
                       >
                         GH ↗
@@ -275,8 +335,8 @@ function ProjectSpatialNode({
             </div>
           </Html>
         )}
-      </group>
-    </Float>
+      </Float>
+    </group>
   )
 }
 
@@ -356,7 +416,7 @@ function CameraZoomBridge({ targetDistance, controlsRef }) {
     const controls = controlsRef.current
     if (!controls || targetDistance == null) return
 
-    const target = controls.target || new THREE.Vector3(0, 1.85, 0)
+    const target = controls.target || new THREE.Vector3(0, 2.04, 0)
     const offset = new THREE.Vector3().subVectors(camera.position, target)
     const currentDist = offset.length()
 
@@ -392,6 +452,10 @@ function ConstellationCarousel({
   reduced,
   modalOpen,
 }) {
+  const { size } = useThree()
+  const metrics = useMemo(() => getResponsiveOrbit(size.width), [size.width])
+  const slotPositions = useMemo(() => getSlotPositions(metrics), [metrics])
+
   const selectedIdx = useMemo(() => {
     if (!activeProject || projects.length === 0) return 0
     const idx = projects.findIndex((p) => p.id === activeProject.id)
@@ -407,16 +471,16 @@ function ConstellationCarousel({
           (activeFilter === 'Experiments' && p.category === 'Experiments') ||
           (activeFilter === 'AI & Machine Learning' && p.category.includes('AI'))
 
-        // Map each project to its relative amphitheater slot
-        // Slot 0 is always the selected project (Center Hero spotlight)
+        // Map each project to its relative circular orbit slot (Slot 0 = Center Hero spotlight)
         const slotIdx = (idx - selectedIdx + projects.length) % projects.length
-        const targetPos = SLOT_POSITIONS[slotIdx % SLOT_POSITIONS.length]
+        const targetPos = slotPositions[slotIdx % slotPositions.length]
 
         return (
           <ProjectSpatialNode
             key={p.id}
             project={p}
             targetPos={targetPos}
+            cardScale={metrics.cardScale}
             active={activeProject}
             hovered={hoveredProject}
             onHover={onHoverProject}
@@ -450,13 +514,13 @@ export default function ProjectUniverseScene({
 
   return (
     <Canvas
-      camera={{ position: [0, 1.85, 12.4], fov: 42 }}
+      camera={{ position: [0, 2.04, 17.4], fov: 42 }}
       dpr={[1, 1.8]}
       gl={{ antialias: true, alpha: true }}
       className="w-full h-full cursor-grab active:cursor-grabbing"
     >
       <color attach="background" args={['#040504']} />
-      <fog attach="fog" args={['#040504', 10, 24]} />
+      <fog attach="fog" args={['#040504', 14, 30]} />
 
       <ambientLight intensity={0.4} />
       <directionalLight position={[5, 8, 5]} intensity={0.7} color="#f4f1ea" />
@@ -477,7 +541,10 @@ export default function ProjectUniverseScene({
         {/* Ambient nebular particle system */}
         <CosmicParticles count={900} reduced={reduced} />
 
-        {/* Interactive 3D Project Constellation Nodes with Dynamic Slot Assignment */}
+        {/* Visible 3D Celestial Orbit Ring Path */}
+        <CelestialOrbitRing reduced={reduced} />
+
+        {/* Interactive 3D Project Constellation Nodes in Circular Orbit */}
         <ConstellationCarousel
           projects={projects}
           activeProject={activeProject}
@@ -496,15 +563,16 @@ export default function ProjectUniverseScene({
           enableDamping
           dampingFactor={0.06}
           rotateSpeed={0.65}
+          enablePan={false}
           enableZoom={true}
           zoomSpeed={0.8}
-          minDistance={5.5}
-          maxDistance={15.5}
+          minDistance={7.5}
+          maxDistance={22.0}
           minAzimuthAngle={-Math.PI / 4.2}
           maxAzimuthAngle={Math.PI / 4.2}
-          minPolarAngle={Math.PI / 2.7}
+          minPolarAngle={Math.PI / 2.6}
           maxPolarAngle={Math.PI / 2.08}
-          target={[0, 1.85, 0]}
+          target={[0, 2.04, 0]}
         />
 
         {/* Dynamic Bidirectional Zoom Bridge */}

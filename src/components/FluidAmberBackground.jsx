@@ -228,11 +228,14 @@ export default function FluidAmberBackground({
       void main() {
         vec2 vel = texture2D(u_velocity_texture, v_uv).xy;
 
-        // Subtle buoyant smoke draft
-        vec2 drift = vec2(sin(v_uv.x * 5.0 + u_time * 0.4) * 0.02, 0.035);
-        vec2 effectiveVel = vel + drift * 0.12;
+        // Organic curl-like heat swirl & rising smoke draft
+        vec2 swirl = vec2(
+          sin(v_uv.y * 9.0 + u_time * 0.65 + cos(v_uv.x * 6.0 - u_time * 0.4)) * 0.045,
+          cos(v_uv.x * 8.0 - u_time * 0.55 + sin(v_uv.y * 7.0 + u_time * 0.35)) * 0.04 + 0.048
+        );
+        vec2 effectiveVel = vel + swirl * 0.16;
 
-        vec2 coord = v_uv - effectiveVel * u_dt * u_texel_size * 55.0;
+        vec2 coord = v_uv - effectiveVel * u_dt * u_texel_size * 58.0;
         coord = clamp(coord, vec2(0.001), vec2(0.999));
 
         vec4 advected = texture2D(u_density_texture, coord);
@@ -244,7 +247,7 @@ export default function FluidAmberBackground({
         vec4 bot   = texture2D(u_density_texture, v_uv - vec2(0.0, u_texel_size.y));
         vec4 blurred = (advected * 4.0 + left + right + top + bot) / 8.0;
 
-        vec4 result = mix(advected, blurred, 0.22) * u_dissipation;
+        vec4 result = mix(advected, blurred, 0.24) * u_dissipation;
 
         // Clean dropoff at tail to prevent muddy accumulation
         if (result.r < 0.001) result = vec4(0.0);
@@ -299,12 +302,12 @@ export default function FluidAmberBackground({
         // Soft exponential Gaussian profile
         float splat = exp(- (d * d) / (2.0 * u_radius * u_radius));
 
-        // Controlled saturation headroom to retain rich amber color and prevent blowout
+        // Controlled saturation headroom to retain rich amber color and prevent flat blowout
         float density = base.r;
-        float headroom = clamp(1.0 - density * 0.55, 0.10, 1.0);
+        float headroom = clamp(1.0 - density * 0.68, 0.08, 1.0);
         vec4 addition = u_color * (splat * headroom);
 
-        gl_FragColor = min(base + addition, vec4(1.6));
+        gl_FragColor = min(base + addition, vec4(1.38));
       }
     `
 
@@ -336,27 +339,26 @@ export default function FluidAmberBackground({
         vec2 aspectUv = v_uv * vec2(u_resolution.x / max(u_resolution.y, 1.0), 1.0);
         float smoke = getOrganicShading(aspectUv, u_time);
 
-        // 1. Organic textured dark base: infused with a rich warm amber-bronze ambient tint
-        vec3 ambientTint = u_tint_color * 0.095 * (0.85 + smoke * 0.45);
-        vec3 bg = u_base_color * (0.85 + smoke * 0.32) + ambientTint;
-        bg += u_tint_color * 0.035 * (smoke * smoke);
+        // 1. Organic textured dark base: infused with a subtle warm amber-bronze ambient tint
+        vec3 ambientTint = u_tint_color * 0.072 * (0.85 + smoke * 0.42);
+        vec3 bg = u_base_color * (0.85 + smoke * 0.30) + ambientTint;
+        bg += u_tint_color * 0.028 * (smoke * smoke);
 
-        // 2. Warm amber fluid glow with rich golden-honey & burnt bronze tint
-        // Smooth non-linear density response (preserves rich amber tint, NEVER harsh solid white)
-        float dNorm = 1.0 - exp(-d * 0.88);
+        // 2. Warm amber fluid glow with rich burnt bronze tail & luminous golden-honey core
+        float dNorm = 1.0 - exp(-d * 0.96);
 
-        vec3 deepAmber    = u_glow_color; // warm amber [224, 142, 28]
-        vec3 warmBronze   = mix(u_glow_color, u_tint_color, 0.60);
-        vec3 goldenHoney  = vec3(0.96, 0.70, 0.20); // molten golden honey
-        vec3 amberCore    = mix(goldenHoney, vec3(1.0, 0.84, 0.48), 0.40);
+        vec3 deepAmber    = u_glow_color;
+        vec3 warmBronze   = mix(u_glow_color, u_tint_color, 0.55);
+        vec3 goldenHoney  = vec3(0.98, 0.72, 0.22);
+        vec3 amberCore    = mix(goldenHoney, vec3(1.0, 0.88, 0.54), 0.45);
 
-        vec3 fluidCol = deepAmber * (dNorm * 0.90)
-                      + warmBronze * (pow(dNorm, 1.5) * 0.75)
-                      + goldenHoney * (pow(dNorm, 2.4) * 0.50)
-                      + amberCore * (pow(dNorm, 3.8) * 0.30);
+        vec3 fluidCol = deepAmber * (dNorm * 0.75)
+                      + warmBronze * (pow(dNorm, 1.55) * 0.78)
+                      + goldenHoney * (pow(dNorm, 2.35) * 0.65)
+                      + amberCore * (pow(dNorm, 3.4) * 0.42);
 
-        // Cinematic saturation tone curve (retains saturated warm amber/bronze at high density)
-        fluidCol = fluidCol / (1.0 + fluidCol * 0.48);
+        // Cinematic saturation tone curve (luminous warm amber core, never chalk white)
+        fluidCol = fluidCol / (1.0 + fluidCol * 0.38);
 
         vec3 col = bg + fluidCol;
 
@@ -477,13 +479,13 @@ export default function FluidAmberBackground({
         p2: [p2.x, p2.y],
         vel: [velX, velY],
         radius,
-        intensity: Math.min(2.8, 0.85 + speed * 2.2),
+        intensity: Math.min(1.65, 0.42 + speed * 2.1),
       })
     }
 
     function THREE_WAY_RADIUS(speed) {
       // Dynamic radius scaling: faster swipes produce a wider, billowing amber plume
-      return Math.min(0.085, 0.038 + speed * 0.055)
+      return Math.min(0.068, 0.032 + speed * 0.045)
     }
 
     const handlePointerMove = (e) => {
@@ -645,7 +647,7 @@ export default function FluidAmberBackground({
       gl.uniform2f(gl.getUniformLocation(simProgram, 'u_texel_size'), 1.0 / simWidth, 1.0 / simHeight)
       gl.uniform1f(gl.getUniformLocation(simProgram, 'u_dt'), dt)
       // Exponential decay rate: burns away softly and organically after movement stops
-      gl.uniform1f(gl.getUniformLocation(simProgram, 'u_dissipation'), 0.978)
+      gl.uniform1f(gl.getUniformLocation(simProgram, 'u_dissipation'), 0.960)
       gl.uniform1f(gl.getUniformLocation(simProgram, 'u_time'), timeSec)
       gl.drawArrays(gl.TRIANGLES, 0, 6)
       densityFBO.swap()

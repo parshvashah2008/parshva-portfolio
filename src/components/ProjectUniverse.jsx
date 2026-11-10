@@ -8,9 +8,9 @@ import { playSyntheticSound } from '../utils/soundFX'
 
 const FILTERS = ['All', 'AI & Machine Learning', 'Web Development', 'SaaS & Products', 'Experiments']
 
-const MIN_ZOOM_DIST = 5.5
-const MAX_ZOOM_DIST = 16.0
-const DEFAULT_ZOOM_DIST = 12.4
+const MIN_ZOOM_DIST = 7.5
+const MAX_ZOOM_DIST = 22.0
+const DEFAULT_ZOOM_DIST = 17.4
 
 function distToPercent(dist) {
   const clamped = Math.max(MIN_ZOOM_DIST, Math.min(MAX_ZOOM_DIST, dist))
@@ -80,14 +80,14 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
   }
 
   return (
-    <section id="work" className="relative min-h-[100svh] bg-[#040504] py-20 overflow-hidden border-t border-white/5">
+    <section id="work" className="relative min-h-[100svh] bg-[#040504] pt-16 pb-8 overflow-hidden border-t border-white/5">
       {/* Background ambient lighting */}
       <div className="absolute top-1/4 left-1/4 w-[42vw] h-[42vw] bg-[#c8f53c]/[0.02] rounded-full blur-[160px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[38vw] h-[38vw] bg-[#1a3828]/[0.2] rounded-full blur-[160px] pointer-events-none" />
 
       {/* Section Header */}
-      <div className="shell relative z-20 mb-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-white/10">
+      <div className="shell relative z-20 mb-3">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-white/10">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-2 h-2 rounded-full bg-[#c8f53c] animate-pulse" />
@@ -155,7 +155,7 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
       {/* Main Experience View */}
       {viewMode === '3d' ? (
         <div
-          className="relative w-full h-[68vh] sm:h-[72vh] md:h-[76vh]"
+          className="relative w-full h-[66vh] min-h-[520px] md:h-[calc(100svh-185px)] md:min-h-[560px] md:max-h-[760px]"
           onWheel={(e) => {
             // Smooth zoom dollying via wheel
             const delta = e.deltaY < 0 ? 5 : -5

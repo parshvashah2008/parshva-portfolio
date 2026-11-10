@@ -118,7 +118,7 @@ export default function Nav({ reduced = false }) {
               <span className="font-mono text-xs font-bold text-[#f4f1ea] tracking-tighter">PS</span>
               <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[#c8f53c] animate-ping" />
             </div>
-            <div className="flex flex-col leading-tight">
+            <div className="flex flex-col leading-tight whitespace-nowrap shrink-0">
               <span className="text-[#f4f1ea] font-sans text-sm font-semibold group-hover:text-[#c8f53c] transition-colors">
                 Parshva Shah
               </span>
@@ -158,7 +158,7 @@ export default function Nav({ reduced = false }) {
               type="button"
               onClick={handleToggleMusic}
               onMouseEnter={() => playSyntheticSound('tick')}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full font-mono text-[10px] sm:text-[11px] border transition-all flex items-center gap-2 cursor-pointer select-none active:scale-95 ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-full font-mono text-[10px] sm:text-[11px] border transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer select-none whitespace-nowrap shrink-0 active:scale-95 ${
                 musicPlaying
                   ? 'border-[#c8f53c] text-[#c8f53c] bg-[#c8f53c]/15 shadow-[0_0_16px_rgba(200,245,60,0.3)] font-semibold'
                   : 'border-white/20 text-white/70 bg-white/5 hover:text-white hover:border-[#c8f53c]/50'
@@ -167,7 +167,7 @@ export default function Nav({ reduced = false }) {
               aria-label={musicPlaying ? 'Soundtrack is ON. Click to Turn OFF' : 'Soundtrack is OFF. Click to Turn ON'}
             >
               {/* Equalizer Bars */}
-              <span className="flex items-end gap-[2px] h-3 w-3.5 pointer-events-none" aria-hidden="true">
+              <span className="flex items-end gap-[2px] h-3 w-3.5 pointer-events-none shrink-0" aria-hidden="true">
                 {musicPlaying ? (
                   <>
                     <span className="w-[2px] bg-[#c8f53c] rounded-full animate-music-bar-1" />
@@ -186,13 +186,16 @@ export default function Nav({ reduced = false }) {
               </span>
 
               {/* Status Text */}
-              <span className="tracking-wider pointer-events-none font-bold">
-                {musicPlaying ? 'SOUNDTRACK: ON' : 'SOUNDTRACK: OFF'}
+              <span className="tracking-wider pointer-events-none font-bold hidden sm:inline">
+                SOUNDTRACK
+              </span>
+              <span className="tracking-wider pointer-events-none font-bold sm:hidden">
+                AUDIO
               </span>
 
               {/* Explicit Toggle Pill [ ON | OFF ] */}
               <span
-                className={`hidden xs:inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold transition-all ${
+                className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold transition-all ${
                   musicPlaying
                     ? 'bg-[#c8f53c] text-black shadow-sm'
                     : 'bg-white/10 text-white/50 border border-white/10'
@@ -202,14 +205,16 @@ export default function Nav({ reduced = false }) {
               </span>
             </button>
 
-            <MagneticButton
-              href="#contact"
-              variant="outline"
-              reduced={reduced}
-              className="text-xs! py-2! px-4! hidden sm:inline-flex border-white/20 hover:border-[#c8f53c] hover:text-[#c8f53c]"
-            >
-              Contact →
-            </MagneticButton>
+            <span className="hidden sm:inline-flex shrink-0">
+              <MagneticButton
+                href="#contact"
+                variant="outline"
+                reduced={reduced}
+                className="text-xs! py-2! px-4! whitespace-nowrap border-white/20 hover:border-[#c8f53c] hover:text-[#c8f53c]"
+              >
+                Contact →
+              </MagneticButton>
+            </span>
 
             <button
               onClick={() => setOpen((v) => !v)}
