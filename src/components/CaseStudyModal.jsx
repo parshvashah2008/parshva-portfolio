@@ -154,6 +154,22 @@ export default function CaseStudyModal({ project, allProjects, onClose, onSelect
               )}
             </div>
 
+            {project.link && project.link.startsWith('http') && (
+              <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-white/55">
+                <span className="uppercase tracking-wider text-[10px] text-[#c8f53c]/90">
+                  Live URL
+                </span>
+                <a
+                  href={project.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/85 hover:text-[#c8f53c] underline underline-offset-4 decoration-white/25 hover:decoration-[#c8f53c] break-all transition-colors"
+                >
+                  {project.link} ↗
+                </a>
+              </div>
+            )}
+
             <p className="text-base sm:text-lg text-white/80 font-sans leading-relaxed pt-4 border-t border-white/10">
               {s.intro}
             </p>

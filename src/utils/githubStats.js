@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { projects as staticProjects } from '../data/projects'
 
 const GITHUB_USERNAME = 'parshvashah2008'
-const CACHE_KEY = 'parshva_github_universe_cache_v3'
+const CACHE_KEY = 'parshva_github_universe_cache_v4'
+const FALLBACK_STORAGE_KEY = 'parshva_github_universe_fallback_v4'
 const CACHE_DURATION_MS = 60 * 1000 // 1 minute so new repos & GitHub Pages deployments appear rapidly
 
 const EXCLUDED_REPOS = new Set([
@@ -22,6 +23,7 @@ const REPO_ALIAS_TO_CASE_STUDY_ID = {
 }
 
 const KNOWN_LIVE_URLS = {
+  'voxfire-io': `https://${GITHUB_USERNAME}.github.io/voxfire-io/`,
   'safar-ai': 'https://safar-ai.netlify.app/',
 }
 
@@ -339,6 +341,77 @@ const DEFAULT_STATS = {
   isLive: false,
 }
 
+const DEFAULT_SYNCED_REPOS = [
+  {
+    name: 'voxfire-io',
+    html_url: `https://github.com/${GITHUB_USERNAME}/voxfire-io`,
+    homepage: null,
+    has_pages: true,
+    description: 'VOXFIRE.io — Blocky Browser FPS built with Three.js',
+    language: 'JavaScript',
+    topics: ['threejs', 'webrtc', 'fps'],
+    stargazers_count: 0,
+    forks_count: 0,
+    pushed_at: '2026-11-10T00:00:00Z',
+    default_branch: 'main',
+  },
+  {
+    name: 'Safar-AI',
+    html_url: `https://github.com/${GITHUB_USERNAME}/Safar-AI`,
+    homepage: null,
+    has_pages: true,
+    description: 'SAFAR AI — An intelligent travel planner for personalized journeys, budgets, itineraries, and trip discovery.',
+    language: 'TypeScript',
+    topics: ['nextjs', 'gemini-api', 'supabase'],
+    stargazers_count: 0,
+    forks_count: 0,
+    pushed_at: '2026-11-10T00:00:00Z',
+    default_branch: 'main',
+  },
+  {
+    name: 'AegisGrid',
+    html_url: `https://github.com/${GITHUB_USERNAME}/AegisGrid`,
+    homepage: null,
+    has_pages: false,
+    description: 'Privacy-first offline AI safety copilot using multimodal sensor fusion on Snapdragon PCs',
+    language: 'Python',
+    topics: ['onnx', 'opencv', 'arduino'],
+    stargazers_count: 0,
+    forks_count: 0,
+    pushed_at: '2026-11-10T00:00:00Z',
+    default_branch: 'main',
+  },
+]
+
+function getFallbackPortfolioData() {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem(FALLBACK_STORAGE_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed?.repos) && parsed.repos.length > 0) {
+          const { projects, syncedCount } = buildMergedProjects(parsed.repos)
+          return {
+            stats: { ...(parsed.stats || DEFAULT_STATS), isLive: false },
+            projects,
+            syncedCount,
+            lastSyncedAt: parsed.timestamp || null,
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore storage errors
+    }
+  }
+  const { projects, syncedCount } = buildMergedProjects(DEFAULT_SYNCED_REPOS)
+  return {
+    stats: DEFAULT_STATS,
+    projects,
+    syncedCount,
+    lastSyncedAt: null,
+  }
+}
+
 function formatRelativeTime(dateString) {
   if (!dateString) return 'Today'
   const date = new Date(dateString)
@@ -600,12 +673,7 @@ export async function fetchGitHubPortfolioData({ force = false } = {}) {
       ])
 
       if (!userRes.ok || !reposRes.ok) {
-        return {
-          stats: DEFAULT_STATS,
-          projects: staticProjects,
-          syncedCount: 0,
-          lastSyncedAt: null,
-        }
+        return getFallbackPortfolioData()
       }
 
       const userData = await userRes.json()
@@ -629,11 +697,10 @@ export async function fetchGitHubPortfolioData({ force = false } = {}) {
       }
 
       const nowTs = Date.now()
+      const cachePayload = JSON.stringify({ timestamp: nowTs, stats, repos })
       try {
-        sessionStorage.setItem(
-          CACHE_KEY,
-          JSON.stringify({ timestamp: nowTs, stats, repos })
-        )
+        sessionStorage.setItem(CACHE_KEY, cachePayload)
+        localStorage.setItem(FALLBACK_STORAGE_KEY, cachePayload)
       } catch (e) {
         // Ignore quota errors
       }
@@ -642,12 +709,7 @@ export async function fetchGitHubPortfolioData({ force = false } = {}) {
       return { stats, projects, syncedCount, lastSyncedAt: nowTs }
     } catch (err) {
       console.debug('GitHub sync fallback:', err)
-      return {
-        stats: DEFAULT_STATS,
-        projects: staticProjects,
-        syncedCount: 0,
-        lastSyncedAt: null,
-      }
+      return getFallbackPortfolioData()
     } finally {
       inflightFetchPromise = null
     }
@@ -685,12 +747,15 @@ export function useGitHubStats() {
  * React hook returning curated case studies seamlessly merged with all live GitHub repos
  */
 export function usePortfolioProjects() {
-  const [state, setState] = useState(() => ({
-    projects: staticProjects,
-    syncedCount: 0,
-    isLoading: true,
-    lastSyncedAt: null,
-  }))
+  const [state, setState] = useState(() => {
+    const initial = getFallbackPortfolioData()
+    return {
+      projects: initial.projects,
+      syncedCount: initial.syncedCount,
+      isLoading: true,
+      lastSyncedAt: initial.lastSyncedAt,
+    }
+  })
 
   const loadProjects = useCallback((force = false) => {
     let cancelled = false
