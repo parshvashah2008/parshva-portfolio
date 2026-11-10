@@ -149,23 +149,23 @@ function InvertibleHeroTypography({ reduced }) {
       const dy = y - lastY
       const dist = Math.hypot(dx, dy)
 
-      // Match full bright golden core width (74px–114px) so white text never lands on bright yellow
-      const baseR = Math.min(114, 74 + dist * 0.5)
-      const steps = Math.max(1, Math.min(6, Math.ceil(dist / 20)))
-      const vx = Math.max(-90, Math.min(90, dx * 2.4))
-      const vy = Math.max(-90, Math.min(90, dy * 2.4))
+      // Match bright luminous golden core width strictly so black ink only sits over bright gold
+      const baseR = Math.min(72, 42 + dist * 0.35)
+      const steps = Math.max(1, Math.min(6, Math.ceil(dist / 16)))
+      const vx = Math.max(-90, Math.min(90, dx * 2.2))
+      const vy = Math.max(-90, Math.min(90, dy * 2.2))
 
       for (let s = 1; s <= steps; s++) {
         const t = s / steps
         stamps.push({
           x: lastX + dx * t,
           y: lastY + dy * t,
-          vx: vx * 0.45,
-          vy: vy * 0.45,
+          vx: vx * 0.42,
+          vy: vy * 0.42,
           baseR,
           r: baseR,
           alpha: 1.0,
-          decay: 0.95, // Stays active across entire luminous amber tail
+          decay: 1.55, // Burns back to ivory in sync with WebGL bright-core dissipation
         })
       }
 
@@ -212,9 +212,10 @@ function InvertibleHeroTypography({ reduced }) {
         st.y += (st.vy - 24) * dt
         st.vx *= 0.94
         st.vy *= 0.94
-        // Hold bright-core coverage across the amber tail, contracting cleanly before cooling dark
-        st.r = st.baseR * (0.62 + 0.38 * Math.max(0, st.alpha))
-        if (st.alpha <= 0.24) {
+        // Contract radius cleanly as bright amber core cools so dark text never sits on dark bronze
+        st.r = st.baseR * (0.35 + 0.65 * Math.max(0, st.alpha))
+        if (st.alpha <= 0.36) {
+          st.alpha = 0
           stamps.splice(i, 1)
         }
       }
@@ -227,11 +228,11 @@ function InvertibleHeroTypography({ reduced }) {
       }
 
       const revealGradients = stamps.map((p) => {
-        const r = Math.max(10, Math.round(p.r))
+        const r = Math.max(8, Math.round(p.r))
         const rx = Math.round(p.x)
         const ry = Math.round(p.y)
-        const coreStrength = p.alpha > 0.24 ? '1' : Math.max(0, (p.alpha - 0.18) / 0.06).toFixed(3)
-        return `radial-gradient(circle ${r}px at ${rx}px ${ry}px, rgba(0,0,0,${coreStrength}) 0%, rgba(0,0,0,${coreStrength}) 72%, transparent 86%)`
+        const coreStrength = p.alpha > 0.46 ? '1' : Math.max(0, (p.alpha - 0.36) / 0.1).toFixed(3)
+        return `radial-gradient(circle ${r}px at ${rx}px ${ry}px, rgba(0,0,0,${coreStrength}) 0%, rgba(0,0,0,${coreStrength}) 58%, transparent 76%)`
       })
 
       // Overlay reveals ink-black text inside active bright amber trail
