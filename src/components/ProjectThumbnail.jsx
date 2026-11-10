@@ -250,33 +250,74 @@ export default function ProjectThumbnail({ project, className = '' }) {
     )
   }
 
-  // Fallback for cybernetic-audiovisual-lab
-  return (
-    <div className={`relative w-full h-full overflow-hidden bg-[#07100b] rounded-xl flex flex-col justify-between p-4 font-mono select-none ${className}`}>
-      <div className="relative z-10 flex items-center justify-between text-[11px] text-[#8be28a]">
-        <span className="flex items-center gap-1.5 font-semibold">
-          <span className="w-2 h-2 rounded-full bg-[#8be28a]" />
-          GLSL Shaders &amp; Audio
-        </span>
-        <span className="text-[10px] text-white/40">WEBGL 2.0</span>
-      </div>
-
-      <div className="relative z-10 my-auto py-2 text-center">
-        <div className="flex items-end justify-center gap-1 h-12 mb-1">
-          {[40, 70, 95, 60, 85, 100, 75, 45, 90, 65, 80, 50].map((h, i) => (
-            <div
-              key={i}
-              className="w-1.5 rounded-t bg-gradient-to-t from-[#8be28a] to-[#c8f53c]"
-              style={{ height: `${h}%` }}
-            />
-          ))}
+  if (id === 'cybernetic-audiovisual-lab') {
+    return (
+      <div className={`relative w-full h-full overflow-hidden bg-[#07100b] rounded-xl flex flex-col justify-between p-4 font-mono select-none ${className}`}>
+        <div className="relative z-10 flex items-center justify-between text-[11px] text-[#8be28a]">
+          <span className="flex items-center gap-1.5 font-semibold">
+            <span className="w-2 h-2 rounded-full bg-[#8be28a]" />
+            GLSL Shaders &amp; Audio
+          </span>
+          <span className="text-[10px] text-white/40">WEBGL 2.0</span>
         </div>
-        <div className="text-[10px] text-white/60">Simplex Noise Volumetric Mesh</div>
+
+        <div className="relative z-10 my-auto py-2 text-center">
+          <div className="flex items-end justify-center gap-1 h-12 mb-1">
+            {[40, 70, 95, 60, 85, 100, 75, 45, 90, 65, 80, 50].map((h, i) => (
+              <div
+                key={i}
+                className="w-1.5 rounded-t bg-gradient-to-t from-[#8be28a] to-[#c8f53c]"
+                style={{ height: `${h}%` }}
+              />
+            ))}
+          </div>
+          <div className="text-[10px] text-white/60">Simplex Noise Volumetric Mesh</div>
+        </div>
+
+        <div className="relative z-10 flex items-center justify-between pt-2 border-t border-white/10 text-[10px] text-white/50">
+          <span>Web Audio API · Three.js</span>
+          <span className="text-[#8be28a]">Real-time FFT</span>
+        </div>
+      </div>
+    )
+  }
+
+  // Dynamic visual preview for auto-synced GitHub repositories & hosted deployments
+  const accent = project.color || '#c8f53c'
+  const isLive = Boolean(project.link && project.link.startsWith('http'))
+  return (
+    <div className={`relative w-full h-full overflow-hidden bg-[#070c09] rounded-xl flex flex-col justify-between p-4 font-mono select-none ${className}`}>
+      <div
+        className="absolute inset-0 opacity-15 [background-size:16px_16px]"
+        style={{ backgroundImage: `radial-gradient(${accent} 1px, transparent 1px)` }}
+      />
+
+      <div className="relative z-10 flex items-center justify-between gap-1.5 text-[10.5px]" style={{ color: accent }}>
+        <span className="flex items-center gap-1 font-semibold truncate">
+          <span className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ backgroundColor: accent }} />
+          <span className="truncate">{project.repoLanguage || project.stack?.[0] || 'GitHub'}</span>
+        </span>
+        <span className="text-[9px] text-white/50 shrink-0">
+          {isLive ? 'LIVE' : 'REPO'}
+        </span>
       </div>
 
-      <div className="relative z-10 flex items-center justify-between pt-2 border-t border-white/10 text-[10px] text-white/50">
-        <span>Web Audio API · Three.js</span>
-        <span className="text-[#8be28a]">Real-time FFT</span>
+      <div className="relative z-10 my-auto py-2 space-y-1.5">
+        <div className="p-2 rounded bg-white/[0.03] border border-white/10">
+          <div className="text-[11.5px] font-sans font-semibold text-[#f4f1ea] truncate">
+            {project.title}
+          </div>
+          <div className="text-[9.5px] text-white/60 font-sans line-clamp-2 mt-0.5 leading-snug">
+            {project.description}
+          </div>
+        </div>
+      </div>
+
+      <div className="relative z-10 flex items-center justify-between pt-2 border-t border-white/10 text-[9.5px] text-white/50">
+        <span className="truncate">{project.githubRepoName || project.id}</span>
+        <span style={{ color: accent }} className="shrink-0">
+          {project.updatedRelative ? `Pushed ${project.updatedRelative}` : 'GitHub Sync'}
+        </span>
       </div>
     </div>
   )

@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { projects } from '../data/projects'
 import ProjectUniverseScene from '../three/ProjectUniverseScene'
 import ProjectThumbnail from './ProjectThumbnail'
 import CaseStudyModal from './CaseStudyModal'
 import { playSyntheticSound } from '../utils/soundFX'
+import { usePortfolioProjects } from '../utils/githubStats'
 
 const FILTERS = ['All', 'AI & Machine Learning', 'Web Development', 'SaaS & Products', 'Experiments']
 
@@ -23,6 +23,7 @@ function percentToDist(pct) {
 }
 
 export default function ProjectUniverse({ reduced = false, lowPower = false }) {
+  const { projects, syncedCount, isLoading, refreshProjects } = usePortfolioProjects()
   const [activeFilter, setActiveFilter] = useState('All')
   const [viewMode, setViewMode] = useState(lowPower ? 'editorial' : '3d') // default to 3D on desktop
   const [hoveredProject, setHoveredProject] = useState(null)
@@ -55,12 +56,19 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
     setZoomDistance(DEFAULT_ZOOM_DIST)
   }
 
-  // Default selected project to first project
+  // Keep selected project synchronized if portfolio projects update from GitHub
   useEffect(() => {
     if (!selectedProject && projects.length > 0) {
       setSelectedProject(projects[0])
+      return
     }
-  }, [selectedProject])
+    if (selectedProject) {
+      const updated = projects.find((p) => p.id === selectedProject.id)
+      if (updated && updated !== selectedProject) {
+        setSelectedProject(updated)
+      }
+    }
+  }, [projects, selectedProject])
 
   const filteredProjects = projects.filter((p) => {
     if (activeFilter === 'All') return true
@@ -146,9 +154,26 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
               {f}
             </button>
           ))}
-          <span className="ml-auto font-mono text-xs text-[#a8a49a] font-semibold hidden sm:inline">
-            Showing {filteredProjects.length} of {projects.length} artifacts
-          </span>
+          <div className="ml-auto hidden sm:flex items-center gap-2.5 shrink-0 font-mono text-xs text-[#a8a49a] font-semibold">
+            <span>
+              Showing {filteredProjects.length} of {projects.length} artifacts
+            </span>
+            {syncedCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-[#c8f53c]/10 border border-[#c8f53c]/25 text-[#c8f53c] text-[10px]">
+                +{syncedCount} GitHub Live
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={refreshProjects}
+              disabled={isLoading}
+              title="Refresh live repositories from GitHub (@parshvashah2008)"
+              aria-label="Sync GitHub repositories"
+              className="w-6 h-6 rounded-full bg-white/5 border border-white/10 hover:border-[#c8f53c]/50 hover:text-[#c8f53c] flex items-center justify-center transition-all cursor-pointer disabled:opacity-40"
+            >
+              ↻
+            </button>
+          </div>
         </div>
       </div>
 
@@ -427,7 +452,7 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
                       </span>
                     ))}
                   </div>
-                  <span className="font-mono text-xs text-[#c8f53c] font-semibold flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                  <span className="font-mono text-xs text-[#c8f53c] font-semibold flex items-center gap-1 whitespace-nowrap shrink-0 group-hover:translate-x-1 transition-transform">
                     Case Study →
                   </span>
                 </div>
@@ -440,6 +465,7 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
       {/* Dedicated Case Study Modal Reader (Page 03) */}
       <CaseStudyModal
         project={activeCaseStudy}
+        allProjects={projects}
         onClose={() => setActiveCaseStudy(null)}
         onSelectNext={(next) => setActiveCaseStudy(next)}
       />

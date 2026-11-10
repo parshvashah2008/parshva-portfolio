@@ -5,7 +5,7 @@ import ArchitectureVisualizer from './ArchitectureVisualizer'
 import { projects } from '../data/projects'
 import { playSyntheticSound } from '../utils/soundFX'
 
-export default function CaseStudyModal({ project, onClose, onSelectNext }) {
+export default function CaseStudyModal({ project, allProjects, onClose, onSelectNext }) {
   const scrollRef = useRef(null)
 
   // Close on Escape key
@@ -31,7 +31,10 @@ export default function CaseStudyModal({ project, onClose, onSelectNext }) {
   if (!project) return null
 
   const s = project.sections || {}
-  const nextProject = projects.find((p) => p.id === s.nextProjectId) || projects[0]
+  const projectList = Array.isArray(allProjects) && allProjects.length > 0 ? allProjects : projects
+  const currentIdx = projectList.findIndex((p) => p.id === project.id)
+  const nextProject =
+    projectList[(currentIdx === -1 ? 0 : currentIdx + 1) % projectList.length] || projectList[0]
 
   return (
     <AnimatePresence>

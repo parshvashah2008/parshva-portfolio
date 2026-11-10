@@ -13,12 +13,9 @@ import { playSyntheticSound } from '../utils/soundFX'
  */
 const SPHERE_RADIUS = 5.45
 const INNER_CARD_RADIUS = 3.98
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5))
 
-// Balanced 3-ring spherical lattice inside the enclosing wireframe sphere:
-// - 3 staggered equatorial nodes (120° apart)
-// - 3 staggered upper-hemisphere crown nodes (120° apart)
-// - 2 balanced lower-hemisphere nodes (180° apart)
-// Guarantees >=118px front separation at 0°..360° while staying inside the sphere shell.
+// Balanced 3-ring spherical lattice inside the enclosing wireframe sphere for up to 8 cards
 const INNER_SPHERE_SLOTS = [
   [0.040, 0.000, 0.960],   // 01: Front center equator spotlight
   [-0.955, -0.063, 0.260], // 02: Left-front equator
@@ -30,39 +27,61 @@ const INNER_SPHERE_SLOTS = [
   [0.720, -0.540, 0.400],  // 08: Lower front-right pole
 ]
 
+function getSlotUnitVector(idx, count) {
+  if (count <= INNER_SPHERE_SLOTS.length) {
+    return INNER_SPHERE_SLOTS[idx % INNER_SPHERE_SLOTS.length]
+  }
+  // Smooth multi-latitude Fibonacci Golden Sphere for N > 8 dynamically synced projects
+  const t = (idx + 0.5) / count
+  const y = 0.04 + (0.5 - t) * 1.12
+  const rXZ = Math.sqrt(Math.max(0, 1 - y * y))
+  const phi = idx * GOLDEN_ANGLE + 0.28
+  return [
+    Number((rXZ * Math.sin(phi)).toFixed(4)),
+    Number(y.toFixed(4)),
+    Number((rXZ * Math.cos(phi)).toFixed(4)),
+  ]
+}
+
 /**
  * Computes responsive enclosing sphere & inner card lattice metrics across
- * desktop, tablet, and narrow mobile viewports.
+ * desktop, tablet, and narrow mobile viewports, scaling smoothly as project count grows.
  */
-function getResponsiveOrbit(canvasWidth) {
+function getResponsiveOrbit(canvasWidth, count = 8) {
   const isMobile = canvasWidth < 640
   const isTablet = canvasWidth < 960
+  const densityFactor = count > 8 ? Math.max(0.76, Math.sqrt(8 / count)) : 1
+  const baseScale = isMobile ? 0.45 : isTablet ? 0.62 : 0.72
   return {
     sphereRadius: isMobile ? 4.35 : SPHERE_RADIUS,
-    innerRadius: isMobile ? 3.05 : INNER_CARD_RADIUS,
-    cardScale: isMobile ? 0.45 : isTablet ? 0.62 : 0.72,
+    innerRadius: isMobile ? 3.00 : INNER_CARD_RADIUS,
+    cardScale: Number((baseScale * densityFactor).toFixed(3)),
   }
 }
 
-function getSlotPositions(metrics) {
-  return INNER_SPHERE_SLOTS.map(([ux, uy, uz]) => [
-    Number((metrics.innerRadius * ux).toFixed(3)),
-    Number((metrics.innerRadius * uy).toFixed(3)),
-    Number((metrics.innerRadius * uz).toFixed(3)),
-  ])
+function getSlotPositions(metrics, count = 8) {
+  const total = Math.max(1, count)
+  return Array.from({ length: total }, (_, idx) => {
+    const [ux, uy, uz] = getSlotUnitVector(idx, total)
+    return [
+      Number((metrics.innerRadius * ux).toFixed(3)),
+      Number((metrics.innerRadius * uy).toFixed(3)),
+      Number((metrics.innerRadius * uz).toFixed(3)),
+    ]
+  })
 }
 
 /**
  * Enclosing 3D Celestial Wireframe Sphere, Gimbal Rings & Radial Anchor Tethers
- * Encompasses all 8 inner-sphere project cards across full 360° camera rotation.
+ * Encompasses all inner-sphere project cards across full 360° camera rotation.
  */
-function CelestialOrbitRing({ reduced = false }) {
+function CelestialOrbitRing({ reduced = false, count = 8 }) {
   const { size } = useThree()
-  const metrics = useMemo(() => getResponsiveOrbit(size.width), [size.width])
+  const metrics = useMemo(() => getResponsiveOrbit(size.width, count), [size.width, count])
   const sphereGroupRef = useRef(null)
 
   const sphereRadius = metrics.sphereRadius
-  const slotPoints = useMemo(() => getSlotPositions(metrics), [metrics])
+  const slotPoints = useMemo(() => getSlotPositions(metrics, count), [metrics, count])
 
   const tetherGeometry = useMemo(() => {
     const pts = []
@@ -562,8 +581,14 @@ function ConstellationCarousel({
   modalOpen,
 }) {
   const { size } = useThree()
-  const metrics = useMemo(() => getResponsiveOrbit(size.width), [size.width])
-  const slotPositions = useMemo(() => getSlotPositions(metrics), [metrics])
+  const metrics = useMemo(
+    () => getResponsiveOrbit(size.width, projects.length),
+    [size.width, projects.length]
+  )
+  const slotPositions = useMemo(
+    () => getSlotPositions(metrics, projects.length),
+    [metrics, projects.length]
+  )
 
   return (
     <group>
@@ -619,7 +644,7 @@ export default function ProjectUniverseScene({
   const focusDir = useMemo(() => {
     if (!activeProject || projects.length === 0) return new THREE.Vector3(0, 0.04, 1).normalize()
     const idx = projects.findIndex((p) => p.id === activeProject.id)
-    const [ux, uy, uz] = INNER_SPHERE_SLOTS[(idx === -1 ? 0 : idx) % INNER_SPHERE_SLOTS.length]
+    const [ux, uy, uz] = getSlotUnitVector(idx === -1 ? 0 : idx, projects.length)
     return new THREE.Vector3(ux, uy * 0.55 + 0.06, uz).normalize()
   }, [activeProject, projects])
 
@@ -660,7 +685,7 @@ export default function ProjectUniverseScene({
         <CosmicParticles count={900} reduced={reduced} />
 
         {/* Enclosing 3D Celestial Sphere & Armillary Gimbal Rings */}
-        <CelestialOrbitRing reduced={reduced} />
+        <CelestialOrbitRing reduced={reduced} count={projects.length} />
 
         {/* Interactive 3D Project Nodes arranged symmetrically inside the sphere */}
         <ConstellationCarousel

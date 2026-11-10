@@ -5,7 +5,7 @@ import MagneticButton from './MagneticButton'
 import FluidAmberBackground from './FluidAmberBackground'
 import { projects } from '../data/projects'
 import { forageCertifications, anthropicCertifications } from '../data/certifications'
-import { useGitHubStats } from '../utils/githubStats'
+import { useGitHubStats, usePortfolioProjects } from '../utils/githubStats'
 
 const EASE = [0.16, 1, 0.3, 1]
 
@@ -298,9 +298,10 @@ function InvertibleHeroTypography({ reduced }) {
 export default function Hero({ reduced = false }) {
   const [activeStat, setActiveStat] = useState(0)
   const ghStats = useGitHubStats()
+  const { projects: liveProjects } = usePortfolioProjects()
 
   const stats = [
-    { n: String(projects.length), l: 'Verified Projects Shipped' },
+    { n: String(liveProjects.length || projects.length), l: 'Verified Projects Shipped' },
     { n: String(anthropicCertifications.length), l: 'Anthropic Claude Certifications' },
     { n: String(ghStats.publicRepos), l: 'Public Production Repositories' },
     { n: String(forageCertifications.length), l: 'Forage Industry Simulations' },
