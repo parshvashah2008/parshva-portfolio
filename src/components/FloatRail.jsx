@@ -31,7 +31,7 @@ const links = [
 
 export default function FloatRail() {
   return (
-    <div className="fixed z-[90] flex gap-3 right-5 top-1/2 -translate-y-1/2 flex-col md:right-5 max-md:right-auto max-md:left-1/2 max-md:-translate-x-1/2 max-md:top-auto max-md:bottom-4 max-md:flex-row">
+    <div className="fixed z-[90] hidden xl:flex gap-3 right-4 xl:right-5 top-1/2 -translate-y-1/2 flex-col">
       {links.map((l) => (
         <a
           key={l.key}
@@ -39,7 +39,7 @@ export default function FloatRail() {
           target="_blank"
           rel="noopener"
           aria-label={l.label}
-          className="w-11 h-11 rounded-full bg-[var(--panel)] border border-[var(--line)] flex items-center justify-center hover:border-[#c8f53c]/45 hover:bg-[var(--panel-2)] transition-all hover:-translate-x-1 max-md:hover:translate-x-0 max-md:hover:-translate-y-1 shadow-lg"
+          className="w-11 h-11 rounded-full bg-[var(--panel)] border border-[var(--line)] flex items-center justify-center hover:border-[#c8f53c]/45 hover:bg-[var(--panel-2)] transition-all hover:-translate-x-1 shadow-lg"
         >
           <span className="w-[19px] h-[19px]">{icons[l.key]}</span>
         </a>

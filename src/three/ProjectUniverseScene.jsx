@@ -6,35 +6,32 @@ import ProjectThumbnail from '../components/ProjectThumbnail'
 import { playSyntheticSound } from '../utils/soundFX'
 
 /**
- * Balanced 8-Card Amphitheater Slot Coordinates.
- * Distributes all 8 projects across two spacious tiers:
- * - Lower Tier (Slots 0, 1, 2): 3 prominent foreground cards (Center Hero, Left, Right)
- * - Upper Tier (Slots 3, 4, 5, 6, 7): 5 cards arched gracefully in the celestial sky
- * Calibrated vertical elevation guarantees clean clearance above the bottom dock bar,
- * and wide horizontal intervals guarantee zero occlusion between any adjacent cards!
+ * 3D Celestial Sphere + Circular Orbit Layout.
+ * Distributes all 8 project cards along a circular/spherical 3D orbit surrounding
+ * a central architectural wireframe sphere & rotating armillary rings, with ZERO overlap.
  */
-const RADIUS_X = 9.8
-const RADIUS_Y = 2.52
-const RADIUS_Z = 2.0
-const CENTER_Y = 2.90
+const RADIUS_X = 11.4
+const RADIUS_Y = 2.72
+const RADIUS_Z = 2.40
+const CENTER_Y = 3.42
 
 // Perspective-compensated angular intervals around the 3D circle so projected spacing
 // around left, right, upper, and lower arcs remains balanced with zero card overlap.
-const ORBIT_ANGLES_DEG = [0, 34, 82, 136, 180, 224, 278, 326]
+const ORBIT_ANGLES_DEG = [0, 35, 86, 142, 180, 218, 274, 325]
 
 /**
- * Computes responsive circular orbit metrics so all 8 cards remain visible
+ * Computes responsive circular/spherical orbit metrics so all 8 cards remain visible
  * across desktop, tablet, and narrow mobile screens without horizontal clipping.
  */
 function getResponsiveOrbit(canvasWidth) {
   const isMobile = canvasWidth < 640
-  const rxScale = canvasWidth >= 1040 ? 1 : Math.max(0.38, canvasWidth / 1080)
-  const cardScale = isMobile ? 0.50 : canvasWidth < 900 ? 0.82 : 1.0
+  const rxScale = canvasWidth >= 1080 ? 1 : Math.max(0.36, canvasWidth / 1120)
+  const cardScale = isMobile ? 0.48 : canvasWidth < 920 ? 0.78 : 1.0
   return {
-    radiusX: isMobile ? 3.85 : RADIUS_X * rxScale,
-    radiusY: isMobile ? 2.85 : RADIUS_Y,
-    radiusZ: isMobile ? 1.5 : RADIUS_Z,
-    centerY: isMobile ? 3.05 : CENTER_Y,
+    radiusX: isMobile ? 3.55 : RADIUS_X * rxScale,
+    radiusY: isMobile ? 2.75 : RADIUS_Y,
+    radiusZ: isMobile ? 1.85 : RADIUS_Z,
+    centerY: isMobile ? 3.35 : CENTER_Y,
     cardScale,
   }
 }
@@ -51,12 +48,21 @@ function getSlotPositions(metrics) {
 }
 
 /**
- * Visual 3D Circular Orbit Ring
- * Renders the glowing orbital halo path traced by the project cards in space.
+ * Visual 3D Celestial Sphere & Circular Orbit Path
+ * Renders the central rotating wireframe globe, armillary meridian rings, and the outer
+ * glowing orbital halo traced by the 8 project cards in 3D space.
  */
 function CelestialOrbitRing({ reduced = false }) {
   const { size } = useThree()
   const metrics = useMemo(() => getResponsiveOrbit(size.width), [size.width])
+  const sphereGroupRef = useRef(null)
+
+  const sphereRadius = useMemo(
+    () => Math.min(metrics.radiusY * 0.78, metrics.radiusX * 0.21),
+    [metrics.radiusX, metrics.radiusY]
+  )
+
+  const slotPoints = useMemo(() => getSlotPositions(metrics), [metrics])
 
   const lineGeometry = useMemo(() => {
     const pts = []
@@ -71,27 +77,126 @@ function CelestialOrbitRing({ reduced = false }) {
     return new THREE.BufferGeometry().setFromPoints(pts)
   }, [metrics])
 
+  useFrame((state, delta) => {
+    if (!sphereGroupRef.current || reduced) return
+    sphereGroupRef.current.rotation.y += delta * 0.14
+    sphereGroupRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.22) * 0.14
+  })
+
   return (
     <group>
-      {/* Primary ethereal neon orbit ring */}
+      {/* Primary ethereal neon circular orbit track */}
       <line geometry={lineGeometry}>
         <lineBasicMaterial
           color="#c8f53c"
           transparent
-          opacity={0.35}
+          opacity={0.38}
           blending={THREE.AdditiveBlending}
         />
       </line>
 
-      {/* Atmospheric secondary halo */}
-      <line geometry={lineGeometry} scale={[1.015, 1.015, 1.015]}>
+      {/* Atmospheric secondary halo ring */}
+      <line geometry={lineGeometry} scale={[1.018, 1.018, 1.018]}>
         <lineBasicMaterial
           color="#4a785d"
           transparent
-          opacity={0.18}
+          opacity={0.2}
           blending={THREE.AdditiveBlending}
         />
       </line>
+
+      {/* Pinpoint orbital slot nodes on the outer circle */}
+      {slotPoints.map((pos, idx) => (
+        <mesh key={idx} position={pos}>
+          <sphereGeometry args={[0.042, 10, 10]} />
+          <meshBasicMaterial
+            color="#c8f53c"
+            transparent
+            opacity={0.45}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+      ))}
+
+      {/* Central Architectural 3D Wireframe Sphere & Armillary Rings */}
+      <group ref={sphereGroupRef} position={[0, metrics.centerY, 0]}>
+        {/* Deep translucent spherical core */}
+        <mesh>
+          <sphereGeometry args={[sphereRadius * 0.96, 32, 24]} />
+          <meshBasicMaterial
+            color="#07150e"
+            transparent
+            opacity={0.38}
+            depthWrite={false}
+          />
+        </mesh>
+
+        {/* Fine geodesic latitude/longitude wireframe globe */}
+        <mesh>
+          <sphereGeometry args={[sphereRadius, 28, 18]} />
+          <meshBasicMaterial
+            color="#4a785d"
+            wireframe
+            transparent
+            opacity={0.22}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+
+        {/* Secondary sparse lime meridian wireframe lattice */}
+        <mesh rotation={[0.25, 0.4, 0]}>
+          <sphereGeometry args={[sphereRadius * 1.006, 16, 10]} />
+          <meshBasicMaterial
+            color="#c8f53c"
+            wireframe
+            transparent
+            opacity={0.11}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+
+        {/* Luminous nucleus core */}
+        <mesh>
+          <sphereGeometry args={[sphereRadius * 0.09, 16, 16]} />
+          <meshBasicMaterial
+            color="#c8f53c"
+            transparent
+            opacity={0.30}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+
+        {/* Smooth equatorial, prime meridian & tilted ecliptic orbital rings */}
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[sphereRadius * 1.12, 0.013, 12, 96]} />
+          <meshBasicMaterial
+            color="#c8f53c"
+            transparent
+            opacity={0.35}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+        <mesh rotation={[0, 0, 0]}>
+          <torusGeometry args={[sphereRadius * 1.06, 0.011, 12, 96]} />
+          <meshBasicMaterial
+            color="#4a785d"
+            transparent
+            opacity={0.28}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+        <mesh rotation={[Math.PI / 3.1, Math.PI / 5, 0]}>
+          <torusGeometry args={[sphereRadius * 1.18, 0.01, 12, 96]} />
+          <meshBasicMaterial
+            color="#c8f53c"
+            transparent
+            opacity={0.24}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+      </group>
     </group>
   )
 }
@@ -148,9 +253,9 @@ function ProjectSpatialNode({
     meshRef.current.getWorldPosition(nodePos)
     const dist = camera.position.distanceTo(nodePos)
 
-    // Depth scaling: front hero card is full size (1.05x), back cards scale gracefully (~0.74x)
-    const scale = THREE.MathUtils.clamp(1.05 - (dist - 15.4) * 0.065, 0.74, 1.05)
-    const opacity = THREE.MathUtils.clamp(1.0 - (dist - 15.4) * 0.032, 0.82, 1.0)
+    // Depth scaling: front hero card is full size (1.05x), back cards scale gracefully (~0.72x)
+    const scale = THREE.MathUtils.clamp(1.05 - (dist - 16.2) * 0.062, 0.72, 1.05)
+    const opacity = THREE.MathUtils.clamp(1.0 - (dist - 16.2) * 0.032, 0.80, 1.0)
     // Front cards have positive Z and higher zIndex than background cards
     const zIndex = Math.round(150 + nodePos.z * 22)
 
@@ -416,7 +521,7 @@ function CameraZoomBridge({ targetDistance, controlsRef }) {
     const controls = controlsRef.current
     if (!controls || targetDistance == null) return
 
-    const target = controls.target || new THREE.Vector3(0, 2.04, 0)
+    const target = controls.target || new THREE.Vector3(0, 2.10, 0)
     const offset = new THREE.Vector3().subVectors(camera.position, target)
     const currentDist = offset.length()
 
@@ -514,7 +619,7 @@ export default function ProjectUniverseScene({
 
   return (
     <Canvas
-      camera={{ position: [0, 2.04, 17.4], fov: 42 }}
+      camera={{ position: [0, 2.24, 18.6], fov: 42 }}
       dpr={[1, 1.8]}
       gl={{ antialias: true, alpha: true }}
       className="w-full h-full cursor-grab active:cursor-grabbing"
@@ -566,13 +671,13 @@ export default function ProjectUniverseScene({
           enablePan={false}
           enableZoom={true}
           zoomSpeed={0.8}
-          minDistance={7.5}
-          maxDistance={22.0}
+          minDistance={8.0}
+          maxDistance={23.0}
           minAzimuthAngle={-Math.PI / 4.2}
           maxAzimuthAngle={Math.PI / 4.2}
           minPolarAngle={Math.PI / 2.6}
           maxPolarAngle={Math.PI / 2.08}
-          target={[0, 2.04, 0]}
+          target={[0, 2.10, 0]}
         />
 
         {/* Dynamic Bidirectional Zoom Bridge */}

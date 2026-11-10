@@ -8,9 +8,9 @@ import { playSyntheticSound } from '../utils/soundFX'
 
 const FILTERS = ['All', 'AI & Machine Learning', 'Web Development', 'SaaS & Products', 'Experiments']
 
-const MIN_ZOOM_DIST = 7.5
-const MAX_ZOOM_DIST = 22.0
-const DEFAULT_ZOOM_DIST = 17.4
+const MIN_ZOOM_DIST = 8.0
+const MAX_ZOOM_DIST = 23.0
+const DEFAULT_ZOOM_DIST = 18.6
 
 function distToPercent(dist) {
   const clamped = Math.max(MIN_ZOOM_DIST, Math.min(MAX_ZOOM_DIST, dist))
@@ -80,14 +80,14 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
   }
 
   return (
-    <section id="work" className="relative min-h-[100svh] bg-[#040504] pt-16 pb-8 overflow-hidden border-t border-white/5">
+    <section id="work" className="relative min-h-[100svh] bg-[#040504] pt-14 md:pt-16 pb-4 overflow-hidden border-t border-white/5">
       {/* Background ambient lighting */}
       <div className="absolute top-1/4 left-1/4 w-[42vw] h-[42vw] bg-[#c8f53c]/[0.02] rounded-full blur-[160px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[38vw] h-[38vw] bg-[#1a3828]/[0.2] rounded-full blur-[160px] pointer-events-none" />
 
       {/* Section Header */}
-      <div className="shell relative z-20 mb-3">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4 border-b border-white/10">
+      <div className="shell relative z-20 mb-1.5">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-3 border-b border-white/10">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="w-2 h-2 rounded-full bg-[#c8f53c] animate-pulse" />
@@ -106,10 +106,10 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
           {/* View Mode & Filter Controls */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             {/* 3D vs Editorial View Toggle */}
-            <div className="inline-flex p-1 rounded-full bg-white/5 border border-white/10 font-mono text-xs">
+            <div className="inline-flex p-1 rounded-full bg-white/5 border border-white/10 font-mono text-xs shrink-0">
               <button
                 onClick={() => setViewMode('3d')}
-                className={`px-3.5 py-1.5 rounded-full transition-all ${
+                className={`px-3.5 py-1.5 rounded-full transition-all whitespace-nowrap ${
                   viewMode === '3d'
                     ? 'bg-[#c8f53c] text-black font-semibold shadow'
                     : 'text-white/70 hover:text-white'
@@ -119,7 +119,7 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
               </button>
               <button
                 onClick={() => setViewMode('editorial')}
-                className={`px-3.5 py-1.5 rounded-full transition-all ${
+                className={`px-3.5 py-1.5 rounded-full transition-all whitespace-nowrap ${
                   viewMode === 'editorial'
                     ? 'bg-[#c8f53c] text-black font-semibold shadow'
                     : 'text-white/70 hover:text-white'
@@ -132,7 +132,7 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto py-3 no-scrollbar">
+        <div className="flex items-center gap-2 overflow-x-auto py-2 no-scrollbar">
           {FILTERS.map((f) => (
             <button
               key={f}
@@ -155,7 +155,7 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
       {/* Main Experience View */}
       {viewMode === '3d' ? (
         <div
-          className="relative w-full h-[66vh] min-h-[520px] md:h-[calc(100svh-185px)] md:min-h-[560px] md:max-h-[760px]"
+          className="relative w-full h-[64vh] min-h-[450px] md:h-[calc(100svh-228px)] md:min-h-[465px] md:max-h-[680px]"
           onWheel={(e) => {
             // Smooth zoom dollying via wheel
             const delta = e.deltaY < 0 ? 5 : -5
