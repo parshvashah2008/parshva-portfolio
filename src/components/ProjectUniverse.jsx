@@ -452,9 +452,22 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
                       </span>
                     ))}
                   </div>
-                  <span className="font-mono text-xs text-[#c8f53c] font-semibold flex items-center gap-1 whitespace-nowrap shrink-0 group-hover:translate-x-1 transition-transform">
-                    Case Study →
-                  </span>
+                  <div className="flex items-center gap-3 shrink-0">
+                    {p.link && p.link.startsWith('http') && (
+                      <a
+                        href={p.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="font-mono text-xs px-2.5 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/15 text-white transition-colors whitespace-nowrap shrink-0"
+                      >
+                        Live ↗
+                      </a>
+                    )}
+                    <span className="font-mono text-xs text-[#c8f53c] font-semibold flex items-center gap-1 whitespace-nowrap shrink-0 group-hover:translate-x-1 transition-transform">
+                      Case Study →
+                    </span>
+                  </div>
                 </div>
               </motion.article>
             ))}

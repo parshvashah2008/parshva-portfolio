@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { projects as staticProjects } from '../data/projects'
 
 const GITHUB_USERNAME = 'parshvashah2008'
-const CACHE_KEY = 'parshva_github_universe_cache_v2'
-const CACHE_DURATION_MS = 5 * 60 * 1000 // 5 minutes for fast auto-discovery of newly pushed repos
+const CACHE_KEY = 'parshva_github_universe_cache_v3'
+const CACHE_DURATION_MS = 60 * 1000 // 1 minute so new repos & GitHub Pages deployments appear rapidly
 
 const EXCLUDED_REPOS = new Set([
   'parshva-portfolio',
@@ -95,12 +95,13 @@ function resolveRepoLiveUrl(repo) {
   if (rawHomepage && /^https?:\/\//i.test(rawHomepage)) {
     return rawHomepage
   }
+  // Prefer official GitHub Pages URL whenever a repository is hosted on GitHub Pages
+  if (repo.has_pages) {
+    return `https://${GITHUB_USERNAME}.github.io/${repo.name}/`
+  }
   const key = (repo.name || '').toLowerCase()
   if (KNOWN_LIVE_URLS[key]) {
     return KNOWN_LIVE_URLS[key]
-  }
-  if (repo.has_pages) {
-    return `https://${GITHUB_USERNAME}.github.io/${repo.name}/`
   }
   return ''
 }
