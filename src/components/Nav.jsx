@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import MagneticButton from './MagneticButton'
 import {
@@ -22,10 +22,10 @@ const LINKS = [
 export default function Nav({ reduced = false }) {
   const [scrolled, setScrolled] = useState(false)
   const [active, setActive] = useState('')
-  const [progress, setProgress] = useState(0)
   const [open, setOpen] = useState(false)
   const [soundActive, setSoundActive] = useState(isSoundEnabled())
   const [musicPlaying, setMusicPlaying] = useState(isMusicPlaying())
+  const progressBarRef = useRef(null)
 
   const handleToggleMusic = (e) => {
     e?.stopPropagation?.()
@@ -50,15 +50,53 @@ export default function Nav({ reduced = false }) {
   }, [])
 
   useEffect(() => {
-    function onScroll() {
+    let maxScroll = Math.max(0, document.documentElement.scrollHeight - document.documentElement.clientHeight)
+    let rafPending = false
+    let lastScrolled = window.scrollY > 24
+
+    function updateMetrics() {
       const doc = document.documentElement
-      setScrolled(window.scrollY > 24)
-      const max = doc.scrollHeight - doc.clientHeight
-      setProgress(max > 0 ? (window.scrollY / max) * 100 : 0)
+      maxScroll = Math.max(0, doc.scrollHeight - doc.clientHeight)
     }
-    onScroll()
+
+    function applyScrollVisuals() {
+      rafPending = false
+      const y = window.scrollY
+      const nextScrolled = y > 24
+      if (nextScrolled !== lastScrolled) {
+        lastScrolled = nextScrolled
+        setScrolled(nextScrolled)
+      }
+      if (progressBarRef.current) {
+        const ratio = maxScroll > 0 ? Math.min(1, Math.max(0, y / maxScroll)) : 0
+        progressBarRef.current.style.transform = `scaleX(${ratio})`
+      }
+    }
+
+    function onScroll() {
+      if (!rafPending) {
+        rafPending = true
+        requestAnimationFrame(applyScrollVisuals)
+      }
+    }
+
+    updateMetrics()
+    setScrolled(lastScrolled)
+    applyScrollVisuals()
+
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => {
+      updateMetrics()
+      onScroll()
+    }) : null
+    ro?.observe(document.body)
+
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    window.addEventListener('resize', updateMetrics, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', updateMetrics)
+      ro?.disconnect()
+    }
   }, [])
 
   useEffect(() => {
@@ -170,10 +208,10 @@ export default function Nav({ reduced = false }) {
               <span className="flex items-end gap-[2px] h-3 w-3.5 pointer-events-none shrink-0" aria-hidden="true">
                 {musicPlaying ? (
                   <>
-                    <span className="w-[2px] bg-[#c8f53c] rounded-full animate-music-bar-1" />
-                    <span className="w-[2px] bg-[#c8f53c] rounded-full animate-music-bar-2" />
-                    <span className="w-[2px] bg-[#c8f53c] rounded-full animate-music-bar-3" />
-                    <span className="w-[2px] bg-[#c8f53c] rounded-full animate-music-bar-4" />
+                    <span className="w-[2px] h-full bg-[#c8f53c] rounded-full animate-music-bar-1" />
+                    <span className="w-[2px] h-full bg-[#c8f53c] rounded-full animate-music-bar-2" />
+                    <span className="w-[2px] h-full bg-[#c8f53c] rounded-full animate-music-bar-3" />
+                    <span className="w-[2px] h-full bg-[#c8f53c] rounded-full animate-music-bar-4" />
                   </>
                 ) : (
                   <>
@@ -234,11 +272,13 @@ export default function Nav({ reduced = false }) {
           </div>
         </div>
 
-        {/* Reading progress hairline */}
+        {/* Reading progress hairline (GPU-composited scaleX, zero React re-renders on scroll) */}
         <div
-          className="absolute left-0 bottom-0 h-[2px]"
+          ref={progressBarRef}
+          className="absolute inset-x-0 bottom-0 h-[2px] origin-left"
           style={{
-            width: progress + '%',
+            transform: 'scaleX(0)',
+            willChange: 'transform',
             background: 'linear-gradient(90deg, #527546, #c8f53c)',
           }}
         />

@@ -1,4 +1,4 @@
-import { Suspense, useMemo } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Float, Html } from '@react-three/drei'
 import { skills } from '../data/projects'
@@ -29,6 +29,20 @@ function Node({ position, label, reduced }) {
 }
 
 export default function SkillsOrbit({ reduced = false }) {
+  const wrapRef = useRef(null)
+  const [isInView, setIsInView] = useState(true)
+
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return undefined
+    const io = new IntersectionObserver(
+      ([entry]) => setIsInView(Boolean(entry?.isIntersecting)),
+      { rootMargin: '220px 0px' }
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
   const positions = useMemo(() => {
     const n = skills.length
     return skills.map((_, i) => {
@@ -40,14 +54,21 @@ export default function SkillsOrbit({ reduced = false }) {
   }, [])
 
   return (
-    <Canvas camera={{ position: [0, 0, 5.4], fov: 42 }} dpr={[1, 1.6]}>
-      <ambientLight intensity={0.6} />
-      <pointLight position={[4, 4, 4]} intensity={1} color="#c8f53c" />
-      <Suspense fallback={null}>
-        {skills.map((s, i) => (
-          <Node key={s.label} position={positions[i]} label={s} reduced={reduced} />
-        ))}
-      </Suspense>
-    </Canvas>
+    <div ref={wrapRef} className="w-full h-full">
+      <Canvas
+        frameloop={isInView && !reduced ? 'always' : 'demand'}
+        camera={{ position: [0, 0, 5.4], fov: 42 }}
+        dpr={[1, 1.5]}
+        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+      >
+        <ambientLight intensity={0.6} />
+        <pointLight position={[4, 4, 4]} intensity={1} color="#c8f53c" />
+        <Suspense fallback={null}>
+          {skills.map((s, i) => (
+            <Node key={s.label} position={positions[i]} label={s} reduced={reduced} />
+          ))}
+        </Suspense>
+      </Canvas>
+    </div>
   )
 }

@@ -14,10 +14,14 @@ function ParticleVortexLab() {
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return undefined
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d', { alpha: false })
     let raf = null
     let w = (canvas.width = canvas.offsetWidth)
     let h = (canvas.height = canvas.offsetHeight)
+    let rect = canvas.getBoundingClientRect()
+    let isInView = true
+    let isTabVisible = !document.hidden
+    let lastTime = performance.now()
 
     const particles = []
     for (let i = 0; i < particleCount; i++) {
@@ -27,14 +31,13 @@ function ParticleVortexLab() {
         vx: (Math.random() - 0.5) * 1.5,
         vy: (Math.random() - 0.5) * 1.5,
         size: Math.random() * 2 + 0.8,
-        color: Math.random() > 0.5 ? '#c8f53c' : '#f4f1ea',
+        accent: i % 2 === 0,
       })
     }
 
     const mouse = { x: w / 2, y: h / 2, active: false }
 
     function handleMouseMove(e) {
-      const rect = canvas.getBoundingClientRect()
       mouse.x = e.clientX - rect.left
       mouse.y = e.clientY - rect.top
       mouse.active = true
@@ -47,18 +50,28 @@ function ParticleVortexLab() {
     function handleResize() {
       w = canvas.width = canvas.offsetWidth
       h = canvas.height = canvas.offsetHeight
+      rect = canvas.getBoundingClientRect()
     }
 
-    window.addEventListener('resize', handleResize)
-    canvas.addEventListener('mousemove', handleMouseMove)
-    canvas.addEventListener('mouseleave', handleMouseLeave)
+    function syncRect() {
+      rect = canvas.getBoundingClientRect()
+    }
 
-    function loop() {
+    function loop(now) {
+      if (!isInView || !isTabVisible) {
+        raf = null
+        return
+      }
+      const dt = Math.min(Math.max((now - lastTime) / 1000, 0.001), 0.05)
+      lastTime = now
+      const dtScale = dt * 60
+      const drag = Math.pow(0.94, dtScale)
+
       ctx.fillStyle = 'rgba(6, 10, 8, 0.22)'
       ctx.fillRect(0, 0, w, h)
 
-      const targetX = mouse.active ? mouse.x : w / 2
-      const targetY = mouse.active ? mouse.y : h / 2
+      const targetX = mouse.active ? mouse.x : w * 0.5
+      const targetY = mouse.active ? mouse.y : h * 0.5
 
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i]
@@ -68,48 +81,93 @@ function ParticleVortexLab() {
         const dist = Math.sqrt(distSq) || 1
 
         if (mode === 'attract') {
-          const force = Math.min(2.5, 300 / distSq)
+          const force = Math.min(2.5, 300 / distSq) * dtScale
           p.vx += (dx / dist) * force
           p.vy += (dy / dist) * force
         } else if (mode === 'repel') {
           if (dist < 180) {
-            const force = (1 - dist / 180) * 4.5
+            const force = (1 - dist / 180) * 4.5 * dtScale
             p.vx -= (dx / dist) * force
             p.vy -= (dy / dist) * force
           }
         } else {
-          // Vortex mode: tangential force + weak attraction
           const perpX = -dy / dist
           const perpY = dx / dist
-          p.vx += perpX * 1.8 + (dx / dist) * 0.45
-          p.vy += perpY * 1.8 + (dy / dist) * 0.45
+          p.vx += (perpX * 1.8 + (dx / dist) * 0.45) * dtScale
+          p.vy += (perpY * 1.8 + (dy / dist) * 0.45) * dtScale
         }
 
-        p.vx *= 0.94
-        p.vy *= 0.94
-        p.x += p.vx
-        p.y += p.vy
+        p.vx *= drag
+        p.vy *= drag
+        p.x += p.vx * dtScale
+        p.y += p.vy * dtScale
 
-        // Wrap around boundaries
         if (p.x < 0) p.x = w
         if (p.x > w) p.x = 0
         if (p.y < 0) p.y = h
         if (p.y > h) p.y = 0
-
-        ctx.fillStyle = p.color
-        ctx.beginPath()
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
-        ctx.fill()
       }
+
+      // Batch all 1,200 particles into 2 draw calls instead of 1,200 individual fill() calls
+      ctx.fillStyle = '#c8f53c'
+      ctx.beginPath()
+      for (let i = 0; i < particles.length; i += 2) {
+        const p = particles[i]
+        const d = p.size * 1.7
+        ctx.rect(p.x - p.size * 0.85, p.y - p.size * 0.85, d, d)
+      }
+      ctx.fill()
+
+      ctx.fillStyle = '#f4f1ea'
+      ctx.beginPath()
+      for (let i = 1; i < particles.length; i += 2) {
+        const p = particles[i]
+        const d = p.size * 1.7
+        ctx.rect(p.x - p.size * 0.85, p.y - p.size * 0.85, d, d)
+      }
+      ctx.fill()
 
       raf = requestAnimationFrame(loop)
     }
 
-    loop()
+    const syncLoop = () => {
+      if (isInView && isTabVisible && !raf) {
+        lastTime = performance.now()
+        raf = requestAnimationFrame(loop)
+      }
+    }
+
+    const io = typeof IntersectionObserver !== 'undefined'
+      ? new IntersectionObserver(
+          ([entry]) => {
+            isInView = Boolean(entry?.isIntersecting)
+            syncLoop()
+          },
+          { rootMargin: '200px 0px' }
+        )
+      : null
+    io?.observe(canvas)
+
+    const onVis = () => {
+      isTabVisible = !document.hidden
+      syncLoop()
+    }
+
+    window.addEventListener('resize', handleResize, { passive: true })
+    window.addEventListener('scroll', syncRect, { passive: true })
+    document.addEventListener('visibilitychange', onVis)
+    canvas.addEventListener('mousemove', handleMouseMove, { passive: true })
+    canvas.addEventListener('mouseleave', handleMouseLeave, { passive: true })
+
+    syncLoop()
 
     return () => {
+      isInView = false
       if (raf) cancelAnimationFrame(raf)
+      io?.disconnect()
       window.removeEventListener('resize', handleResize)
+      window.removeEventListener('scroll', syncRect)
+      document.removeEventListener('visibilitychange', onVis)
       canvas.removeEventListener('mousemove', handleMouseMove)
       canvas.removeEventListener('mouseleave', handleMouseLeave)
     }
@@ -192,67 +250,112 @@ function AudioVisualizerLab() {
     }
   }
 
-  // Draw procedural animated harmonics
+  // Draw procedural animated harmonics (zero per-frame canvas resizing + dt-scaled phase + offscreen pause)
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return undefined
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d', { alpha: false })
     let raf = null
     let t = 0
+    let w = (canvas.width = canvas.offsetWidth)
+    let h = (canvas.height = canvas.offsetHeight)
+    let isInView = true
+    let isTabVisible = !document.hidden
+    let lastTime = performance.now()
 
-    function draw() {
-      const w = (canvas.width = canvas.offsetWidth)
-      const h = (canvas.height = canvas.offsetHeight)
+    const waves = [
+      { freq: 0.015, amp: 40, color: '#c8f53c', speed: 0.04 },
+      { freq: 0.025, amp: 25, color: '#f4f1ea', speed: 0.06 },
+      { freq: 0.008, amp: 60, color: '#8ba352', speed: 0.02 },
+    ]
+
+    function syncSize() {
+      if (!canvas) return
+      w = canvas.width = canvas.offsetWidth
+      h = canvas.height = canvas.offsetHeight
+    }
+
+    function draw(now) {
+      if (!isInView || !isTabVisible) {
+        raf = null
+        return
+      }
+      const dt = Math.min(Math.max((now - lastTime) / 1000, 0.001), 0.05)
+      lastTime = now
+      t += dt * 60
 
       ctx.fillStyle = '#060a08'
       ctx.fillRect(0, 0, w, h)
 
-      // Draw grid lines
+      // Batch grid lines into one stroke() call
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)'
       ctx.lineWidth = 1
+      ctx.beginPath()
       for (let x = 0; x < w; x += 40) {
-        ctx.beginPath()
         ctx.moveTo(x, 0)
         ctx.lineTo(x, h)
-        ctx.stroke()
       }
       for (let y = 0; y < h; y += 40) {
-        ctx.beginPath()
         ctx.moveTo(0, y)
         ctx.lineTo(w, y)
-        ctx.stroke()
       }
+      ctx.stroke()
 
-      // Draw multi-harmonic waves
-      const waves = [
-        { freq: 0.015, amp: 40, color: '#c8f53c', speed: 0.04 },
-        { freq: 0.025, amp: 25, color: '#f4f1ea', speed: 0.06 },
-        { freq: 0.008, amp: 60, color: '#8ba352', speed: 0.02 },
-      ]
-
-      waves.forEach((wave) => {
+      for (let wi = 0; wi < waves.length; wi++) {
+        const wave = waves[wi]
         ctx.strokeStyle = wave.color
         ctx.lineWidth = 2
         ctx.beginPath()
-
-        for (let x = 0; x < w; x++) {
+        for (let x = 0; x <= w; x += 2) {
           const y =
-            h / 2 +
+            h * 0.5 +
             Math.sin(x * wave.freq + t * wave.speed) * wave.amp +
             Math.cos(x * 0.005 + t * 0.01) * (wave.amp * 0.4)
           if (x === 0) ctx.moveTo(x, y)
           else ctx.lineTo(x, y)
         }
         ctx.stroke()
-      })
+      }
 
-      t += 1
       raf = requestAnimationFrame(draw)
     }
 
-    draw()
+    const syncLoop = () => {
+      if (isInView && isTabVisible && !raf) {
+        lastTime = performance.now()
+        raf = requestAnimationFrame(draw)
+      }
+    }
+
+    const io = typeof IntersectionObserver !== 'undefined'
+      ? new IntersectionObserver(
+          ([entry]) => {
+            isInView = Boolean(entry?.isIntersecting)
+            syncLoop()
+          },
+          { rootMargin: '200px 0px' }
+        )
+      : null
+    io?.observe(canvas)
+
+    const onVis = () => {
+      isTabVisible = !document.hidden
+      syncLoop()
+    }
+
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(syncSize) : null
+    ro?.observe(canvas)
+    window.addEventListener('resize', syncSize, { passive: true })
+    document.addEventListener('visibilitychange', onVis)
+
+    syncLoop()
     return () => {
+      isInView = false
       if (raf) cancelAnimationFrame(raf)
+      io?.disconnect()
+      ro?.disconnect()
+      window.removeEventListener('resize', syncSize)
+      document.removeEventListener('visibilitychange', onVis)
       if (audioCtxRef.current) audioCtxRef.current.close()
     }
   }, [])

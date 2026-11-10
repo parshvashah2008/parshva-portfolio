@@ -113,10 +113,10 @@ html.lenis,html.lenis body{ height:auto; }
 }
 .rule{ height:1px; background:linear-gradient(90deg,var(--line),transparent); }
 
-/* ---------- backdrop layers ---------- */
-.glow{ position:absolute; border-radius:9999px; filter:blur(110px); pointer-events:none; }
-.glow-a{ width:48vw; height:48vw; top:-15vh; left:-10vw; background:radial-gradient(circle,rgba(200,245,60,.05),transparent 68%); animation:drift-a 32s ease-in-out infinite; }
-.glow-b{ width:44vw; height:44vw; bottom:-12vh; right:-6vw; background:radial-gradient(circle,rgba(24,54,38,.24),transparent 68%); animation:drift-b 38s ease-in-out infinite; }
+/* ---------- backdrop layers (100% GPU-composited, zero runtime filter blur) ---------- */
+.glow{ position:absolute; border-radius:9999px; pointer-events:none; will-change:transform; }
+.glow-a{ width:64vw; height:64vw; top:-22vh; left:-16vw; background:radial-gradient(circle,rgba(200,245,60,.055) 0%,rgba(200,245,60,.02) 38%,transparent 70%); animation:drift-a 32s ease-in-out infinite; }
+.glow-b{ width:60vw; height:60vw; bottom:-18vh; right:-12vw; background:radial-gradient(circle,rgba(24,54,38,.26) 0%,rgba(24,54,38,.09) 42%,transparent 72%); animation:drift-b 38s ease-in-out infinite; }
 @keyframes drift-a{ 0%,100%{ transform:translate3d(0,0,0) scale(1) } 50%{ transform:translate3d(4vw,4vh,0) scale(1.1) } }
 @keyframes drift-b{ 0%,100%{ transform:translate3d(0,0,0) scale(1) } 50%{ transform:translate3d(-4vw,-4vh,0) scale(1.08) } }
 
@@ -167,21 +167,21 @@ html.lenis,html.lenis body{ height:auto; }
 
 .scroll-cue{ width:1px; height:56px; background:linear-gradient(180deg,transparent,rgba(244,241,234,.25)); position:relative; overflow:hidden; }
 .scroll-cue::after{
-  content:''; position:absolute; left:0; width:1px; height:18px;
-  background:var(--accent); animation:cue 2.2s var(--ease) infinite;
+  content:''; position:absolute; top:0; left:0; width:1px; height:18px;
+  background:var(--accent); will-change:transform; animation:cue 2.2s var(--ease) infinite;
 }
-@keyframes cue{ 0%{ top:-20px; opacity:0 } 30%{ opacity:1 } 100%{ top:58px; opacity:0 } }
+@keyframes cue{ 0%{ transform:translate3d(0,-20px,0); opacity:0 } 30%{ opacity:1 } 100%{ transform:translate3d(0,58px,0); opacity:0 } }
 
-/* ---------- soundtrack equalizer animation ---------- */
-@keyframes musicBar1 { 0%, 100% { height: 25%; } 50% { height: 100%; } }
-@keyframes musicBar2 { 0%, 100% { height: 85%; } 50% { height: 20%; } }
-@keyframes musicBar3 { 0%, 100% { height: 35%; } 50% { height: 95%; } }
-@keyframes musicBar4 { 0%, 100% { height: 90%; } 50% { height: 30%; } }
+/* ---------- soundtrack equalizer animation (compositor scaleY, zero layout repaint) ---------- */
+@keyframes musicBar1 { 0%, 100% { transform: scaleY(0.25); } 50% { transform: scaleY(1); } }
+@keyframes musicBar2 { 0%, 100% { transform: scaleY(0.85); } 50% { transform: scaleY(0.2); } }
+@keyframes musicBar3 { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(0.95); } }
+@keyframes musicBar4 { 0%, 100% { transform: scaleY(0.9); } 50% { transform: scaleY(0.3); } }
 
-.animate-music-bar-1 { animation: musicBar1 0.85s ease-in-out infinite; }
-.animate-music-bar-2 { animation: musicBar2 0.72s ease-in-out infinite 0.15s; }
-.animate-music-bar-3 { animation: musicBar3 0.95s ease-in-out infinite 0.3s; }
-.animate-music-bar-4 { animation: musicBar4 0.78s ease-in-out infinite 0.1s; }
+.animate-music-bar-1 { will-change: transform; transform-origin: bottom; animation: musicBar1 0.85s ease-in-out infinite; }
+.animate-music-bar-2 { will-change: transform; transform-origin: bottom; animation: musicBar2 0.72s ease-in-out infinite 0.15s; }
+.animate-music-bar-3 { will-change: transform; transform-origin: bottom; animation: musicBar3 0.95s ease-in-out infinite 0.3s; }
+.animate-music-bar-4 { will-change: transform; transform-origin: bottom; animation: musicBar4 0.78s ease-in-out infinite 0.1s; }
 
 /* ---------- custom cyber scrollbar ---------- */
 html {

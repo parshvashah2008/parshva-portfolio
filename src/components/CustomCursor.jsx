@@ -25,7 +25,18 @@ export default function CustomCursor({ reduced = false }) {
     let mouseY = -100
     let ringX = -100
     let ringY = -100
+    let lastTime = performance.now()
     let rafId = null
+    let isRunning = !document.hidden
+    let lastMetaKey = 'false||default'
+
+    function commitMeta(active, text, variant) {
+      const nextKey = `${active}|${text}|${variant}`
+      if (nextKey !== lastMetaKey) {
+        lastMetaKey = nextKey
+        setCursorState({ active, text, variant })
+      }
+    }
 
     function onMouseMove(e) {
       mouseX = e.clientX
@@ -35,39 +46,47 @@ export default function CustomCursor({ reduced = false }) {
 
       // If hovering over FluidAmberBackground, let its bespoke square sand cursor take precedence
       if (target && target.closest && target.closest('[data-fluid-bg]')) {
-        setCursorState((prev) => (prev.active ? { ...prev, active: false } : prev))
+        commitMeta(false, lastMetaKey.split('|')[1] || '', lastMetaKey.split('|')[2] || 'default')
         return
       }
 
       // Check hovered element
-      const interactiveEl = target.closest(
+      const interactiveEl = target.closest?.(
         'button, a, [data-cursor], input, textarea, select'
       )
 
       if (interactiveEl) {
         const cursorAttr = interactiveEl.getAttribute('data-cursor')
         if (cursorAttr === 'orbit') {
-          setCursorState({ active: true, text: 'ORBIT', variant: 'orbit' })
+          commitMeta(true, 'ORBIT', 'orbit')
         } else if (cursorAttr === 'view') {
-          setCursorState({ active: true, text: 'VIEW', variant: 'view' })
+          commitMeta(true, 'VIEW', 'view')
         } else if (cursorAttr === 'terminal') {
-          setCursorState({ active: true, text: 'TYPE', variant: 'terminal' })
+          commitMeta(true, 'TYPE', 'terminal')
         } else {
-          setCursorState({ active: true, text: '', variant: 'hover' })
+          commitMeta(true, '', 'hover')
         }
       } else {
-        setCursorState({ active: true, text: '', variant: 'default' })
+        commitMeta(true, '', 'default')
       }
     }
 
     function onMouseLeave() {
-      setCursorState((prev) => ({ ...prev, active: false }))
+      commitMeta(false, '', 'default')
     }
 
-    function renderLoop() {
-      // Smooth lerp for ring
-      ringX += (mouseX - ringX) * 0.18
-      ringY += (mouseY - ringY) * 0.18
+    function renderLoop(now) {
+      if (!isRunning) {
+        rafId = null
+        return
+      }
+      const dt = Math.min(Math.max((now - lastTime) / 1000, 0.001), 0.05)
+      lastTime = now
+
+      // Display-refresh-independent exponential smoothing (identical feel at 60Hz, 144Hz, 240Hz+)
+      const ease = 1 - Math.exp(-16 * dt)
+      ringX += (mouseX - ringX) * ease
+      ringY += (mouseY - ringY) * ease
 
       dot.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0)`
       ring.style.transform = `translate3d(${ringX}px, ${ringY}px, 0)`
@@ -75,13 +94,30 @@ export default function CustomCursor({ reduced = false }) {
       rafId = requestAnimationFrame(renderLoop)
     }
 
+    function onVisibility() {
+      if (document.hidden) {
+        isRunning = false
+        if (rafId) {
+          cancelAnimationFrame(rafId)
+          rafId = null
+        }
+      } else {
+        isRunning = true
+        lastTime = performance.now()
+        if (!rafId) rafId = requestAnimationFrame(renderLoop)
+      }
+    }
+
     window.addEventListener('mousemove', onMouseMove, { passive: true })
     document.addEventListener('mouseleave', onMouseLeave)
-    rafId = requestAnimationFrame(renderLoop)
+    document.addEventListener('visibilitychange', onVisibility)
+    if (isRunning) rafId = requestAnimationFrame(renderLoop)
 
     return () => {
+      isRunning = false
       window.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('mouseleave', onMouseLeave)
+      document.removeEventListener('visibilitychange', onVisibility)
       if (rafId) cancelAnimationFrame(rafId)
     }
   }, [reduced])
@@ -103,13 +139,15 @@ export default function CustomCursor({ reduced = false }) {
         className="absolute top-0 left-0 -ml-1 -mt-1 w-2 h-2 rounded-full bg-[#c8f53c] shadow-[0_0_10px_#c8f53c]"
         style={{
           opacity: isText ? 0 : 1,
+          willChange: 'transform',
         }}
       />
 
-      {/* Trailing Fluid Ring */}
+      {/* Trailing Fluid Ring (never transition transform since rAF drives it per-frame) */}
       <div
         ref={ringRef}
-        className={`absolute top-0 left-0 rounded-full flex items-center justify-center font-mono text-[9px] font-bold tracking-widest uppercase transition-all duration-300 ${
+        style={{ willChange: 'transform' }}
+        className={`absolute top-0 left-0 rounded-full flex items-center justify-center font-mono text-[9px] font-bold tracking-widest uppercase transition-[width,height,margin,border-color,background-color,opacity] duration-200 ${
           isText
             ? '-ml-6 -mt-6 w-12 h-12 border border-[#c8f53c] bg-[#c8f53c]/20 text-[#c8f53c] shadow-[0_0_20px_rgba(200,245,60,0.35)] backdrop-blur-xs'
             : isHover

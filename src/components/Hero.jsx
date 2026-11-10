@@ -122,9 +122,23 @@ function InvertibleHeroTypography({ reduced }) {
     let lastY = -1000
     let lastTime = performance.now()
     let rafId = null
+    let cachedRect = container.getBoundingClientRect()
+    let fluidH = container.closest('[data-fluid-bg]')?.clientHeight || window.innerHeight || 760
+
+    const syncMetrics = () => {
+      cachedRect = container.getBoundingClientRect()
+      fluidH = container.closest('[data-fluid-bg]')?.clientHeight || window.innerHeight || 760
+    }
+
+    function ensureLoop() {
+      if (!rafId && !document.hidden) {
+        lastTime = performance.now()
+        rafId = requestAnimationFrame(loop)
+      }
+    }
 
     function handlePointer(clientX, clientY) {
-      const rect = container.getBoundingClientRect()
+      const rect = cachedRect
       const x = clientX - rect.left
       const y = clientY - rect.top
 
@@ -149,12 +163,9 @@ function InvertibleHeroTypography({ reduced }) {
       const dy = y - lastY
       const dist = Math.hypot(dx, dy)
 
-      // Stay inside bright amber cloud (~46px–72px) while retaining enough trail history
-      // so fast sweeps remain 100% ink-black across the luminous golden core.
-      const fluidH = container.closest('[data-fluid-bg]')?.clientHeight || window.innerHeight || 760
       const minCoreR = Math.max(46, Math.round(fluidH * 0.062))
       const baseR = Math.min(72, minCoreR + dist * 0.28)
-      const steps = Math.max(1, Math.min(6, Math.ceil(dist / 14)))
+      const steps = Math.max(1, Math.min(4, Math.ceil(dist / 18)))
       const vx = Math.max(-70, Math.min(70, dx * 1.4))
       const vy = Math.max(-70, Math.min(70, dy * 1.4))
 
@@ -174,9 +185,10 @@ function InvertibleHeroTypography({ reduced }) {
       lastX = x
       lastY = y
 
-      if (stamps.length > 72) {
-        stamps.splice(0, stamps.length - 72)
+      if (stamps.length > 28) {
+        stamps.splice(0, stamps.length - 28)
       }
+      ensureLoop()
     }
 
     const onPointerMove = (e) => {
@@ -189,6 +201,8 @@ function InvertibleHeroTypography({ reduced }) {
     }
 
     window.addEventListener('pointermove', onPointerMove, { passive: true })
+    window.addEventListener('scroll', syncMetrics, { passive: true })
+    window.addEventListener('resize', syncMetrics, { passive: true })
     document.addEventListener('mouseleave', onPointerLeave)
 
     function clearMasks() {
@@ -202,9 +216,13 @@ function InvertibleHeroTypography({ reduced }) {
     }
 
     function loop(now) {
-      rafId = requestAnimationFrame(loop)
-      const dt = Math.min((now - lastTime) / 1000, 0.05)
+      if (document.hidden) {
+        rafId = null
+        return
+      }
+      const dt = Math.min(Math.max((now - lastTime) / 1000, 0.001), 0.05)
       lastTime = now
+      const velDamp = Math.exp(-6.3 * dt)
 
       for (let i = stamps.length - 1; i >= 0; i--) {
         const st = stamps[i]
@@ -212,8 +230,8 @@ function InvertibleHeroTypography({ reduced }) {
         st.alpha *= Math.exp(-1.75 * dt)
         st.x += st.vx * dt
         st.y += st.vy * dt
-        st.vx *= 0.90
-        st.vy *= 0.90
+        st.vx *= velDamp
+        st.vy *= velDamp
         st.r = st.baseR * (0.48 + 0.52 * Math.max(0, st.alpha))
         if (st.alpha <= 0.36) {
           st.alpha = 0
@@ -225,10 +243,12 @@ function InvertibleHeroTypography({ reduced }) {
         if (overlay.style.opacity !== '0') {
           clearMasks()
         }
+        // Auto-park rAF when trail finishes so idle pages use zero CPU/GPU mask passes
+        rafId = null
         return
       }
 
-      // Crisp 6px anti-aliased edge without any muddy 50%-black + 50%-white gray halo
+      // Crisp anti-aliased edge without any muddy gray halo
       const revealGradients = stamps.map((p) => {
         const r = Math.max(10, Math.round(p.r))
         const rx = Math.round(p.x)
@@ -236,24 +256,23 @@ function InvertibleHeroTypography({ reduced }) {
         return `radial-gradient(circle ${r}px at ${rx}px ${ry}px, #000 0%, #000 86%, transparent 96%)`
       })
 
-      // Overlay reveals ink-black text inside active bright amber trail
       const revealMask = revealGradients.join(', ')
       overlay.style.maskImage = revealMask
       overlay.style.maskComposite = 'add'
       overlay.style.opacity = '1'
 
-      // Base layer: solid mask on TOP (index 0) subtracts the union of all reveal gradients below it
-      // Formula: solid \ (grad1 + grad2 + ... + gradN) = 1 - min(1, sum)
       const cutoutMask = ['linear-gradient(#000, #000)', ...revealGradients].join(', ')
       const compositeModes = ['subtract', ...revealGradients.map(() => 'add')].join(', ')
       base.style.maskImage = cutoutMask
       base.style.maskComposite = compositeModes
-    }
 
-    rafId = requestAnimationFrame(loop)
+      rafId = requestAnimationFrame(loop)
+    }
 
     return () => {
       window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('scroll', syncMetrics)
+      window.removeEventListener('resize', syncMetrics)
       document.removeEventListener('mouseleave', onPointerLeave)
       if (rafId) cancelAnimationFrame(rafId)
     }

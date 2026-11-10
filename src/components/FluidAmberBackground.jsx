@@ -82,10 +82,17 @@ export default function FluidAmberBackground({
     const container = containerRef.current
     if (!canvas || !container) return undefined
 
-    // Attempt WebGL2 or WebGL1 context creation
+    // Attempt WebGL2 or WebGL1 context creation with high-performance GPU preference
+    const glOpts = {
+      alpha: false,
+      antialias: false,
+      depth: false,
+      stencil: false,
+      powerPreference: 'high-performance',
+    }
     const gl =
-      canvas.getContext('webgl2', { alpha: false, antialias: false, depth: false, stencil: false }) ||
-      canvas.getContext('webgl', { alpha: false, antialias: false, depth: false, stencil: false })
+      canvas.getContext('webgl2', glOpts) ||
+      canvas.getContext('webgl', glOpts)
 
     let isFallback = !gl
     let fallbackRafId = null
@@ -384,6 +391,45 @@ export default function FluidAmberBackground({
       return undefined
     }
 
+    // Cache attribute & uniform locations once to eliminate >2,000 WebGL lookups/sec at 144Hz
+    const locs = {
+      splat: {
+        aPos: gl.getAttribLocation(splatProgram, 'a_pos'),
+        uTarget: gl.getUniformLocation(splatProgram, 'u_target'),
+        uPtA: gl.getUniformLocation(splatProgram, 'u_point_a'),
+        uPtB: gl.getUniformLocation(splatProgram, 'u_point_b'),
+        uAspect: gl.getUniformLocation(splatProgram, 'u_aspect'),
+        uRad: gl.getUniformLocation(splatProgram, 'u_radius'),
+        uCol: gl.getUniformLocation(splatProgram, 'u_color'),
+      },
+      vel: {
+        aPos: gl.getAttribLocation(velProgram, 'a_pos'),
+        uVel: gl.getUniformLocation(velProgram, 'u_velocity_texture'),
+        uTexel: gl.getUniformLocation(velProgram, 'u_texel_size'),
+        uDt: gl.getUniformLocation(velProgram, 'u_dt'),
+        uDiss: gl.getUniformLocation(velProgram, 'u_dissipation'),
+      },
+      sim: {
+        aPos: gl.getAttribLocation(simProgram, 'a_pos'),
+        uVel: gl.getUniformLocation(simProgram, 'u_velocity_texture'),
+        uDens: gl.getUniformLocation(simProgram, 'u_density_texture'),
+        uTexel: gl.getUniformLocation(simProgram, 'u_texel_size'),
+        uDt: gl.getUniformLocation(simProgram, 'u_dt'),
+        uDiss: gl.getUniformLocation(simProgram, 'u_dissipation'),
+        uTime: gl.getUniformLocation(simProgram, 'u_time'),
+      },
+      display: {
+        aPos: gl.getAttribLocation(displayProgram, 'a_pos'),
+        uDens: gl.getUniformLocation(displayProgram, 'u_density_texture'),
+        uRes: gl.getUniformLocation(displayProgram, 'u_resolution'),
+        uTime: gl.getUniformLocation(displayProgram, 'u_time'),
+        uBg: gl.getUniformLocation(displayProgram, 'u_base_color'),
+        uGlow: gl.getUniformLocation(displayProgram, 'u_glow_color'),
+        uTint: gl.getUniformLocation(displayProgram, 'u_tint_color'),
+        uGrain: gl.getUniformLocation(displayProgram, 'u_grain_opacity'),
+      },
+    }
+
     // Geometry: Full-screen quad
     const quadBuffer = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer)
@@ -488,10 +534,17 @@ export default function FluidAmberBackground({
       return Math.min(0.070, 0.040 + speed * 0.045)
     }
 
+    let cachedRect = container.getBoundingClientRect()
+    const syncRect = () => {
+      if (container) cachedRect = container.getBoundingClientRect()
+    }
+
     const handlePointerMove = (e) => {
-      const rect = container.getBoundingClientRect()
-      const nx = (e.clientX - rect.left) / rect.width
-      const ny = 1.0 - (e.clientY - rect.top) / rect.height // Invert Y for WebGL texture coords
+      const rect = cachedRect
+      const w = Math.max(rect.width, 1)
+      const h = Math.max(rect.height, 1)
+      const nx = (e.clientX - rect.left) / w
+      const ny = 1.0 - (e.clientY - rect.top) / h // Invert Y for WebGL texture coords
 
       if (pointer.prevX >= 0 && pointer.prevY >= 0) {
         const dx = nx - pointer.prevX
@@ -519,20 +572,25 @@ export default function FluidAmberBackground({
       pointer.moved = true
     }
 
+    const handlePointerEnter = () => syncRect()
+
     const handlePointerLeave = () => {
       pointer.prevX = -1
       pointer.prevY = -1
     }
 
+    container.addEventListener('pointerenter', handlePointerEnter, { passive: true })
     container.addEventListener('pointermove', handlePointerMove, { passive: true })
     container.addEventListener('pointerleave', handlePointerLeave, { passive: true })
+    window.addEventListener('scroll', syncRect, { passive: true })
 
     // ResizeObserver
     const handleResize = () => {
       if (!container || !canvas) return
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5)
       cssWidth = container.clientWidth || window.innerWidth
       cssHeight = container.clientHeight || window.innerHeight
+      syncRect()
 
       canvas.width = Math.floor(cssWidth * dpr)
       canvas.height = Math.floor(cssHeight * dpr)
@@ -554,61 +612,57 @@ export default function FluidAmberBackground({
     const resizeObserver = new ResizeObserver(handleResize)
     resizeObserver.observe(container)
 
-    // Render Loop
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer)
+
+    // Render Loop (144Hz+ refresh-rate-independent simulation + offscreen pause)
     let animId = null
     let lastTime = performance.now()
+    let isInView = true
+    let isTabVisible = !document.hidden
 
     function render(now) {
+      if (!isInView || !isTabVisible) {
+        animId = null
+        return
+      }
       animId = requestAnimationFrame(render)
 
-      const dt = Math.min((now - lastTime) / 1000, 0.033)
+      const dt = Math.min(Math.max((now - lastTime) / 1000, 0.001), 0.05)
       lastTime = now
       const timeSec = now * 0.001
+      const stepDissipation = Math.pow(0.96, dt * 60)
 
       gl.viewport(0, 0, simWidth, simHeight)
 
       // 1. Splat Injection Pass
       if (splatQueue.length > 0) {
         gl.useProgram(splatProgram)
-        const aPosLoc = gl.getAttribLocation(splatProgram, 'a_pos')
-        gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer)
-        gl.enableVertexAttribArray(aPosLoc)
-        gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, false, 0, 0)
-
-        const uTarget = gl.getUniformLocation(splatProgram, 'u_target')
-        const uPtA = gl.getUniformLocation(splatProgram, 'u_point_a')
-        const uPtB = gl.getUniformLocation(splatProgram, 'u_point_b')
-        const uAspect = gl.getUniformLocation(splatProgram, 'u_aspect')
-        const uRad = gl.getUniformLocation(splatProgram, 'u_radius')
-        const uCol = gl.getUniformLocation(splatProgram, 'u_color')
-
-        const aspect = [cssWidth / Math.max(cssHeight, 1), 1.0]
-        gl.uniform2f(uAspect, aspect[0], aspect[1])
+        gl.enableVertexAttribArray(locs.splat.aPos)
+        gl.vertexAttribPointer(locs.splat.aPos, 2, gl.FLOAT, false, 0, 0)
+        gl.uniform2f(locs.splat.uAspect, cssWidth / Math.max(cssHeight, 1), 1.0)
 
         while (splatQueue.length > 0) {
           const s = splatQueue.shift()
 
-          // Splat into Velocity FBO
           gl.bindFramebuffer(gl.FRAMEBUFFER, velocityFBO.write.fbo)
           gl.activeTexture(gl.TEXTURE0)
           gl.bindTexture(gl.TEXTURE_2D, velocityFBO.read.tex)
-          gl.uniform1i(uTarget, 0)
-          gl.uniform2f(uPtA, s.p1[0], s.p1[1])
-          gl.uniform2f(uPtB, s.p2[0], s.p2[1])
-          gl.uniform1f(uRad, s.radius * 1.25)
-          gl.uniform4f(uCol, s.vel[0], s.vel[1], 0.0, 1.0)
+          gl.uniform1i(locs.splat.uTarget, 0)
+          gl.uniform2f(locs.splat.uPtA, s.p1[0], s.p1[1])
+          gl.uniform2f(locs.splat.uPtB, s.p2[0], s.p2[1])
+          gl.uniform1f(locs.splat.uRad, s.radius * 1.25)
+          gl.uniform4f(locs.splat.uCol, s.vel[0], s.vel[1], 0.0, 1.0)
           gl.drawArrays(gl.TRIANGLES, 0, 6)
           velocityFBO.swap()
 
-          // Splat into Density / Amber Dye FBO
           gl.bindFramebuffer(gl.FRAMEBUFFER, densityFBO.write.fbo)
           gl.activeTexture(gl.TEXTURE0)
           gl.bindTexture(gl.TEXTURE_2D, densityFBO.read.tex)
-          gl.uniform1i(uTarget, 0)
-          gl.uniform2f(uPtA, s.p1[0], s.p1[1])
-          gl.uniform2f(uPtB, s.p2[0], s.p2[1])
-          gl.uniform1f(uRad, s.radius)
-          gl.uniform4f(uCol, s.intensity, s.intensity * 0.75, s.intensity * 0.35, 1.0)
+          gl.uniform1i(locs.splat.uTarget, 0)
+          gl.uniform2f(locs.splat.uPtA, s.p1[0], s.p1[1])
+          gl.uniform2f(locs.splat.uPtB, s.p2[0], s.p2[1])
+          gl.uniform1f(locs.splat.uRad, s.radius)
+          gl.uniform4f(locs.splat.uCol, s.intensity, s.intensity * 0.75, s.intensity * 0.35, 1.0)
           gl.drawArrays(gl.TRIANGLES, 0, 6)
           densityFBO.swap()
         }
@@ -616,42 +670,37 @@ export default function FluidAmberBackground({
 
       // 2. Advect Velocity Pass
       gl.useProgram(velProgram)
-      const velAPos = gl.getAttribLocation(velProgram, 'a_pos')
-      gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer)
-      gl.enableVertexAttribArray(velAPos)
-      gl.vertexAttribPointer(velAPos, 2, gl.FLOAT, false, 0, 0)
+      gl.enableVertexAttribArray(locs.vel.aPos)
+      gl.vertexAttribPointer(locs.vel.aPos, 2, gl.FLOAT, false, 0, 0)
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, velocityFBO.write.fbo)
       gl.activeTexture(gl.TEXTURE0)
       gl.bindTexture(gl.TEXTURE_2D, velocityFBO.read.tex)
-      gl.uniform1i(gl.getUniformLocation(velProgram, 'u_velocity_texture'), 0)
-      gl.uniform2f(gl.getUniformLocation(velProgram, 'u_texel_size'), 1.0 / simWidth, 1.0 / simHeight)
-      gl.uniform1f(gl.getUniformLocation(velProgram, 'u_dt'), dt)
-      gl.uniform1f(gl.getUniformLocation(velProgram, 'u_dissipation'), 0.96)
+      gl.uniform1i(locs.vel.uVel, 0)
+      gl.uniform2f(locs.vel.uTexel, 1.0 / simWidth, 1.0 / simHeight)
+      gl.uniform1f(locs.vel.uDt, dt)
+      gl.uniform1f(locs.vel.uDiss, stepDissipation)
       gl.drawArrays(gl.TRIANGLES, 0, 6)
       velocityFBO.swap()
 
       // 3. Advect + Diffuse + Decay Density (Amber Dye) Pass
       gl.useProgram(simProgram)
-      const simAPos = gl.getAttribLocation(simProgram, 'a_pos')
-      gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer)
-      gl.enableVertexAttribArray(simAPos)
-      gl.vertexAttribPointer(simAPos, 2, gl.FLOAT, false, 0, 0)
+      gl.enableVertexAttribArray(locs.sim.aPos)
+      gl.vertexAttribPointer(locs.sim.aPos, 2, gl.FLOAT, false, 0, 0)
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, densityFBO.write.fbo)
       gl.activeTexture(gl.TEXTURE0)
       gl.bindTexture(gl.TEXTURE_2D, velocityFBO.read.tex)
-      gl.uniform1i(gl.getUniformLocation(simProgram, 'u_velocity_texture'), 0)
+      gl.uniform1i(locs.sim.uVel, 0)
 
       gl.activeTexture(gl.TEXTURE1)
       gl.bindTexture(gl.TEXTURE_2D, densityFBO.read.tex)
-      gl.uniform1i(gl.getUniformLocation(simProgram, 'u_density_texture'), 1)
+      gl.uniform1i(locs.sim.uDens, 1)
 
-      gl.uniform2f(gl.getUniformLocation(simProgram, 'u_texel_size'), 1.0 / simWidth, 1.0 / simHeight)
-      gl.uniform1f(gl.getUniformLocation(simProgram, 'u_dt'), dt)
-      // Exponential decay rate: burns away softly and organically after movement stops
-      gl.uniform1f(gl.getUniformLocation(simProgram, 'u_dissipation'), 0.960)
-      gl.uniform1f(gl.getUniformLocation(simProgram, 'u_time'), timeSec)
+      gl.uniform2f(locs.sim.uTexel, 1.0 / simWidth, 1.0 / simHeight)
+      gl.uniform1f(locs.sim.uDt, dt)
+      gl.uniform1f(locs.sim.uDiss, stepDissipation)
+      gl.uniform1f(locs.sim.uTime, timeSec)
       gl.drawArrays(gl.TRIANGLES, 0, 6)
       densityFBO.swap()
 
@@ -660,32 +709,59 @@ export default function FluidAmberBackground({
       gl.viewport(0, 0, canvas.width, canvas.height)
 
       gl.useProgram(displayProgram)
-      const dispAPos = gl.getAttribLocation(displayProgram, 'a_pos')
-      gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer)
-      gl.enableVertexAttribArray(dispAPos)
-      gl.vertexAttribPointer(dispAPos, 2, gl.FLOAT, false, 0, 0)
+      gl.enableVertexAttribArray(locs.display.aPos)
+      gl.vertexAttribPointer(locs.display.aPos, 2, gl.FLOAT, false, 0, 0)
 
       gl.activeTexture(gl.TEXTURE0)
       gl.bindTexture(gl.TEXTURE_2D, densityFBO.read.tex)
-      gl.uniform1i(gl.getUniformLocation(displayProgram, 'u_density_texture'), 0)
+      gl.uniform1i(locs.display.uDens, 0)
 
-      gl.uniform2f(gl.getUniformLocation(displayProgram, 'u_resolution'), canvas.width, canvas.height)
-      gl.uniform1f(gl.getUniformLocation(displayProgram, 'u_time'), timeSec)
-      gl.uniform3f(gl.getUniformLocation(displayProgram, 'u_base_color'), parsedBgColor[0], parsedBgColor[1], parsedBgColor[2])
-      gl.uniform3f(gl.getUniformLocation(displayProgram, 'u_glow_color'), parsedGlowColor[0], parsedGlowColor[1], parsedGlowColor[2])
-      gl.uniform3f(gl.getUniformLocation(displayProgram, 'u_tint_color'), parsedTintColor[0], parsedTintColor[1], parsedTintColor[2])
-      gl.uniform1f(gl.getUniformLocation(displayProgram, 'u_grain_opacity'), reduced ? grainOpacity * 0.5 : grainOpacity)
+      gl.uniform2f(locs.display.uRes, canvas.width, canvas.height)
+      gl.uniform1f(locs.display.uTime, timeSec)
+      gl.uniform3f(locs.display.uBg, parsedBgColor[0], parsedBgColor[1], parsedBgColor[2])
+      gl.uniform3f(locs.display.uGlow, parsedGlowColor[0], parsedGlowColor[1], parsedGlowColor[2])
+      gl.uniform3f(locs.display.uTint, parsedTintColor[0], parsedTintColor[1], parsedTintColor[2])
+      gl.uniform1f(locs.display.uGrain, reduced ? grainOpacity * 0.5 : grainOpacity)
 
       gl.drawArrays(gl.TRIANGLES, 0, 6)
     }
 
-    animId = requestAnimationFrame(render)
+    const syncRenderState = () => {
+      if (isInView && isTabVisible && !animId) {
+        lastTime = performance.now()
+        animId = requestAnimationFrame(render)
+      }
+    }
+
+    const io = typeof IntersectionObserver !== 'undefined'
+      ? new IntersectionObserver(
+          ([entry]) => {
+            isInView = Boolean(entry?.isIntersecting)
+            syncRenderState()
+          },
+          { rootMargin: '240px 0px' }
+        )
+      : null
+    io?.observe(container)
+
+    const handleVisibility = () => {
+      isTabVisible = !document.hidden
+      syncRenderState()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    syncRenderState()
 
     // Comprehensive unmount cleanup
     return () => {
+      isInView = false
       if (animId) cancelAnimationFrame(animId)
+      io?.disconnect()
+      document.removeEventListener('visibilitychange', handleVisibility)
+      container.removeEventListener('pointerenter', handlePointerEnter)
       container.removeEventListener('pointermove', handlePointerMove)
       container.removeEventListener('pointerleave', handlePointerLeave)
+      window.removeEventListener('scroll', syncRect)
       resizeObserver.disconnect()
 
       densityFBO.destroy()
@@ -698,13 +774,14 @@ export default function FluidAmberBackground({
     }
   }, [backgroundColor, glowColor, grainOpacity, parsedBgColor, parsedGlowColor, parsedTintColor, reduced, tintColor])
 
-  // Custom Square Cursor Follower with Smooth Easing
+  // Custom Square Cursor Follower with GPU-composited Transform & Refresh-Independent Easing
   useEffect(() => {
     if (!isFinePointer || reduced) return undefined
     const container = containerRef.current
     const cursor = cursorRef.current
     if (!container || !cursor) return undefined
 
+    let rect = container.getBoundingClientRect()
     let targetX = -100
     let targetY = -100
     let curX = -100
@@ -712,18 +789,33 @@ export default function FluidAmberBackground({
     let isInside = false
     let isInteractive = false
     let rafId = null
+    let lastTime = performance.now()
+
+    const refreshRect = () => {
+      rect = container.getBoundingClientRect()
+    }
+
+    function onPointerEnter() {
+      refreshRect()
+      if (!rafId && !document.hidden) {
+        lastTime = performance.now()
+        rafId = requestAnimationFrame(loop)
+      }
+    }
 
     function onPointerMove(e) {
-      const rect = container.getBoundingClientRect()
       targetX = e.clientX - rect.left
       targetY = e.clientY - rect.top
       isInside = true
 
-      // Detect interactive target under cursor
-      const interactiveEl = e.target.closest(
+      const interactiveEl = e.target.closest?.(
         'button, a, input, select, textarea, [role="button"], [data-cursor], [data-interactive], .interactive'
       )
       isInteractive = Boolean(interactiveEl)
+      if (!rafId && !document.hidden) {
+        lastTime = performance.now()
+        rafId = requestAnimationFrame(loop)
+      }
     }
 
     function onPointerLeave() {
@@ -731,28 +823,41 @@ export default function FluidAmberBackground({
       isInteractive = false
     }
 
-    function loop() {
-      curX += (targetX - curX) * 0.26
-      curY += (targetY - curY) * 0.26
+    function loop(now) {
+      if (document.hidden) {
+        rafId = null
+        return
+      }
+      const dt = Math.min(Math.max((now - lastTime) / 1000, 0.001), 0.05)
+      lastTime = now
 
-      const size = isInteractive ? 20 : 10
-      const offset = size / 2
+      const ease = 1 - Math.exp(-20 * dt)
+      curX += (targetX - curX) * ease
+      curY += (targetY - curY) * ease
 
-      cursor.style.transform = `translate3d(${curX - offset}px, ${curY - offset}px, 0)`
-      cursor.style.width = `${size}px`
-      cursor.style.height = `${size}px`
+      const scale = isInteractive ? 2 : 1
+      cursor.style.transform = `translate3d(${curX - 5}px, ${curY - 5}px, 0) scale(${scale})`
       cursor.style.opacity = isInside ? (isInteractive ? '0.65' : '0.90') : '0'
 
+      if (!isInside && Math.abs(targetX - curX) < 0.25 && Math.abs(targetY - curY) < 0.25) {
+        rafId = null
+        return
+      }
       rafId = requestAnimationFrame(loop)
     }
 
+    container.addEventListener('pointerenter', onPointerEnter, { passive: true })
     container.addEventListener('pointermove', onPointerMove, { passive: true })
     container.addEventListener('pointerleave', onPointerLeave, { passive: true })
-    rafId = requestAnimationFrame(loop)
+    window.addEventListener('scroll', refreshRect, { passive: true })
+    window.addEventListener('resize', refreshRect, { passive: true })
 
     return () => {
+      container.removeEventListener('pointerenter', onPointerEnter)
       container.removeEventListener('pointermove', onPointerMove)
       container.removeEventListener('pointerleave', onPointerLeave)
+      window.removeEventListener('scroll', refreshRect)
+      window.removeEventListener('resize', refreshRect)
       if (rafId) cancelAnimationFrame(rafId)
     }
   }, [isFinePointer, reduced])
@@ -775,18 +880,20 @@ export default function FluidAmberBackground({
         className="absolute inset-0 w-full h-full pointer-events-none z-0 block"
       />
 
-      {/* Bespoke Square Sand/Beige Custom Cursor (Fine pointers only) */}
+      {/* Bespoke Square Sand/Beige Custom Cursor (Fine pointers only, 100% GPU composited) */}
       {isFinePointer && !reduced && (
         <div
           ref={cursorRef}
           aria-hidden="true"
-          className="pointer-events-none absolute top-0 left-0 z-50 transition-[width,height,opacity] duration-200 ease-out"
+          className="pointer-events-none absolute top-0 left-0 z-50 transition-opacity duration-200 ease-out"
           style={{
+            width: '10px',
+            height: '10px',
             backgroundColor: cursorColor,
             boxShadow: `0 0 10px ${cursorColor}60`,
             borderRadius: '0px', // Strict sharp square as requested
             opacity: 0,
-            willChange: 'transform, width, height, opacity',
+            willChange: 'transform, opacity',
           }}
         />
       )}

@@ -225,50 +225,56 @@ function ProjectSpatialNode({
   modalOpen = false,
 }) {
   const meshRef = useRef(null)
+  const cardRef = useRef(null)
+  const nodePosRef = useRef(new THREE.Vector3())
+  const lastVisualRef = useRef({ scale: -1, opacity: -1, zIndex: -999 })
   const isSelected = active?.id === project.id
   const isHovered = hovered?.id === project.id
-  const [depthScale, setDepthScale] = useState(1)
-  const [depthOpacity, setDepthOpacity] = useState(1)
-  const [depthZIndex, setDepthZIndex] = useState(100)
 
-  // Real-time camera proximity tracking & smooth position interpolation along the circle
+  // Keep opacity & zIndex aligned cleanly when hover/selection/filter changes while idle
+  useEffect(() => {
+    lastVisualRef.current.scale = -1
+    lastVisualRef.current.opacity = -1
+    lastVisualRef.current.zIndex = -999
+  }, [isSelected, isHovered, filterMatch, cardScale])
+
+  // Real-time 144Hz+ camera proximity tracking with ZERO React setState or heap allocations in useFrame
   useFrame(({ camera }, delta) => {
     if (!meshRef.current) return
 
-    // Smoothly lerp towards assigned slot position on the 3D circle
-    meshRef.current.position.x = THREE.MathUtils.damp(
-      meshRef.current.position.x,
-      targetPos[0],
-      5.5,
-      delta
-    )
-    meshRef.current.position.y = THREE.MathUtils.damp(
-      meshRef.current.position.y,
-      targetPos[1],
-      5.5,
-      delta
-    )
-    meshRef.current.position.z = THREE.MathUtils.damp(
-      meshRef.current.position.z,
-      targetPos[2],
-      5.5,
-      delta
-    )
+    // Smoothly damp towards assigned slot position on the 3D sphere
+    meshRef.current.position.x = THREE.MathUtils.damp(meshRef.current.position.x, targetPos[0], 5.5, delta)
+    meshRef.current.position.y = THREE.MathUtils.damp(meshRef.current.position.y, targetPos[1], 5.5, delta)
+    meshRef.current.position.z = THREE.MathUtils.damp(meshRef.current.position.z, targetPos[2], 5.5, delta)
 
-    const nodePos = new THREE.Vector3()
+    if (!cardRef.current || modalOpen) return
+
+    const nodePos = nodePosRef.current
     meshRef.current.getWorldPosition(nodePos)
     const dist = camera.position.distanceTo(nodePos)
     const centerDist = camera.position.length()
 
-    // View-agnostic 360° depth scaling & opacity: front cards pop sharply; back cards recede smoothly
     const relDepth = dist - centerDist
-    const scale = THREE.MathUtils.clamp(0.86 - relDepth * 0.06, 0.54, 1.04)
-    const opacity = THREE.MathUtils.clamp(0.92 - relDepth * 0.085, 0.44, 1.0)
-    const zIndex = Math.round(240 - dist * 7)
+    const depthScale = THREE.MathUtils.clamp(0.86 - relDepth * 0.06, 0.54, 1.04)
+    const targetScale = (isSelected || isHovered ? 1.05 : depthScale) * cardScale
+    const depthOpacity = THREE.MathUtils.clamp(0.92 - relDepth * 0.085, 0.44, 1.0)
+    const targetOpacity = filterMatch ? (isHovered || isSelected ? 1 : depthOpacity) : 0.18
+    const targetZ = isHovered || isSelected ? 250 : Math.round(240 - dist * 7)
 
-    if (Math.abs(scale - depthScale) > 0.015) setDepthScale(scale)
-    if (Math.abs(opacity - depthOpacity) > 0.03) setDepthOpacity(opacity)
-    if (zIndex !== depthZIndex) setDepthZIndex(zIndex)
+    const prev = lastVisualRef.current
+    if (Math.abs(targetScale - prev.scale) > 0.006) {
+      prev.scale = targetScale
+      cardRef.current.style.transform = `translate3d(0, 0, 0) scale(${targetScale.toFixed(3)})`
+    }
+    if (Math.abs(targetOpacity - prev.opacity) > 0.015) {
+      prev.opacity = targetOpacity
+      cardRef.current.style.opacity = targetOpacity.toFixed(3)
+    }
+    if (targetZ !== prev.zIndex) {
+      prev.zIndex = targetZ
+      const htmlHost = cardRef.current.parentElement
+      if (htmlHost) htmlHost.style.zIndex = String(targetZ)
+    }
   })
 
   return (
@@ -278,12 +284,14 @@ function ProjectSpatialNode({
         rotationIntensity={0}
         floatIntensity={reduced ? 0 : 0.35}
       >
-        {/* Ambient halo glow */}
-        <pointLight
-          color={project.color}
-          intensity={isSelected ? 1.8 : isHovered ? 1.2 : 0.4}
-          distance={3.5}
-        />
+        {/* Mount dynamic WebGL pointLight only on focused/hovered node to eliminate 11x fragment light loops */}
+        {(isSelected || isHovered) && (
+          <pointLight
+            color={project.color}
+            intensity={isSelected ? 1.8 : 1.2}
+            distance={3.5}
+          />
+        )}
 
         {/* Interactive 3D Spatial Presentation (completely unmounted while modal is open) */}
         {!modalOpen && (
@@ -292,14 +300,12 @@ function ProjectSpatialNode({
             position={[0, 0, 0]}
             zIndexRange={[300, 0]}
             style={{
-              transition: 'opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-              opacity: filterMatch ? (isHovered || isSelected ? 1 : depthOpacity) : 0.18,
               pointerEvents: filterMatch ? 'auto' : 'none',
-              zIndex: isHovered || isSelected ? 250 : depthZIndex,
             }}
           >
-            {/* Full Interactive 3D Card: all projects rendered simultaneously */}
+            {/* Full Interactive 3D Card: direct GPU transform/opacity updates with zero backdrop-blur stalls */}
             <div
+              ref={cardRef}
               onClick={(e) => {
                 e.stopPropagation()
                 playSyntheticSound('click')
@@ -310,17 +316,19 @@ function ProjectSpatialNode({
                 onHover(project)
               }}
               onMouseLeave={() => onHover(null)}
-              className={`cursor-pointer transition-transform duration-300 select-none ${
+              className={`cursor-pointer select-none ${
                 isSelected ? 'ring-1 ring-[#c8f53c]/60' : ''
               }`}
               style={{
                 width: isSelected || isHovered ? '176px' : '150px',
-                transform: `scale(${((isSelected || isHovered ? 1.05 : depthScale) * cardScale).toFixed(3)})`,
+                transform: `translate3d(0, 0, 0) scale(${((isSelected || isHovered ? 1.05 : 0.86) * cardScale).toFixed(3)})`,
+                opacity: filterMatch ? (isHovered || isSelected ? 1 : 0.92) : 0.18,
                 transformOrigin: 'center center',
+                willChange: 'transform, opacity',
               }}
             >
               <div
-                className="relative p-2 rounded-xl backdrop-blur-xl border transition-all duration-300 shadow-2xl overflow-hidden group"
+                className="relative p-2 rounded-xl border transition-colors duration-200 shadow-2xl overflow-hidden group"
                 style={{
                   backgroundColor: isSelected
                     ? '#0d1712'
@@ -522,31 +530,40 @@ function CosmicParticles({ count = 800, reduced = false }) {
  */
 function CameraZoomBridge({ targetDistance, focusDir, slewActiveRef, controlsRef }) {
   const { camera } = useThree()
+  const fallbackTargetRef = useRef(new THREE.Vector3(0, -0.25, 0))
+  const offsetRef = useRef(new THREE.Vector3())
+  const desiredRef = useRef(new THREE.Vector3())
 
-  useFrame(() => {
+  useFrame((_, delta) => {
     const controls = controlsRef.current
     if (!controls) return
 
-    const target = controls.target || new THREE.Vector3(0, -0.25, 0)
-    const offset = new THREE.Vector3().subVectors(camera.position, target)
+    const dt = Math.min(delta, 0.05)
+    const target = controls.target || fallbackTargetRef.current
+    const offset = offsetRef.current.subVectors(camera.position, target)
     const currentDist = offset.length()
 
     if (currentDist < 0.001) return
 
     let nextDist = currentDist
+    let moved = false
     if (targetDistance != null) {
       const diff = Math.abs(currentDist - targetDistance)
       if (diff > 0.02) {
-        nextDist = THREE.MathUtils.lerp(currentDist, targetDistance, 0.18)
+        const distEase = 1 - Math.exp(-10 * dt)
+        nextDist = THREE.MathUtils.lerp(currentDist, targetDistance, distEase)
+        moved = true
       } else if (diff > 0.003) {
         nextDist = targetDistance
+        moved = true
       }
     }
 
     // Smoothly orbit 360° around sphere when a card/stepper selection requests focus
     if (slewActiveRef.current && focusDir) {
-      const desiredOffset = focusDir.clone().multiplyScalar(nextDist)
-      offset.lerp(desiredOffset, 0.10)
+      const slewEase = 1 - Math.exp(-6.5 * dt)
+      const desiredOffset = desiredRef.current.copy(focusDir).multiplyScalar(nextDist)
+      offset.lerp(desiredOffset, slewEase)
       offset.setLength(nextDist)
       if (offset.distanceTo(desiredOffset) < 0.18) {
         slewActiveRef.current = false
@@ -556,7 +573,7 @@ function CameraZoomBridge({ targetDistance, focusDir, slewActiveRef, controlsRef
       return
     }
 
-    if (nextDist !== currentDist) {
+    if (moved) {
       offset.setLength(nextDist)
       camera.position.copy(target).add(offset)
       controls.update()
@@ -636,10 +653,23 @@ export default function ProjectUniverseScene({
   zoomDistance,
   onDistanceChange,
 }) {
+  const wrapRef = useRef(null)
   const controlsRef = useRef(null)
   const slewActiveRef = useRef(false)
   const [isInteracting, setIsInteracting] = useState(false)
+  const [isInView, setIsInView] = useState(true)
   const prevActiveIdRef = useRef(activeProject?.id)
+
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return undefined
+    const io = new IntersectionObserver(
+      ([entry]) => setIsInView(Boolean(entry?.isIntersecting)),
+      { rootMargin: '220px 0px' }
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
 
   const focusDir = useMemo(() => {
     if (!activeProject || projects.length === 0) return new THREE.Vector3(0, 0.04, 1).normalize()
@@ -656,12 +686,14 @@ export default function ProjectUniverseScene({
   }, [activeProject])
 
   return (
-    <Canvas
-      camera={{ position: [0, 0.15, 16.2], fov: 42 }}
-      dpr={[1, 1.8]}
-      gl={{ antialias: true, alpha: true }}
-      className="w-full h-full cursor-grab active:cursor-grabbing"
-    >
+    <div ref={wrapRef} className="w-full h-full">
+      <Canvas
+        frameloop={isInView && !modalOpen ? 'always' : 'demand'}
+        camera={{ position: [0, 0.15, 16.2], fov: 42 }}
+        dpr={[1, 1.5]}
+        gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
+        className="w-full h-full cursor-grab active:cursor-grabbing"
+      >
       <color attach="background" args={['#040504']} />
       <fog attach="fog" args={['#040504', 18, 36]} />
 
@@ -733,5 +765,6 @@ export default function ProjectUniverseScene({
         />
       </Suspense>
     </Canvas>
+    </div>
   )
 }

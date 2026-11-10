@@ -36,9 +36,8 @@ const PORTRAITS = [
 
 export default function EditorialPortraitHero({ reduced = false }) {
   const [activeIdx, setActiveIdx] = useState(0)
-  const [tilt, setTilt] = useState({ x: 0, y: 0 })
-  const [isHovered, setIsHovered] = useState(false)
   const containerRef = useRef(null)
+  const rectRef = useRef(null)
 
   // Preload all portrait images so transitions are instant with zero flash
   useEffect(() => {
@@ -61,18 +60,29 @@ export default function EditorialPortraitHero({ reduced = false }) {
 
   const active = PORTRAITS[activeIdx]
 
-  // Subtle interactive 3D tilt
+  // Subtle GPU-composited interactive 3D tilt (zero React re-renders on pointermove)
+  const handleMouseEnter = () => {
+    if (!reduced && containerRef.current) {
+      rectRef.current = containerRef.current.getBoundingClientRect()
+      containerRef.current.style.transition = 'transform 0.08s ease-out'
+    }
+  }
+
   const handleMouseMove = (e) => {
     if (reduced || !containerRef.current) return
-    const rect = containerRef.current.getBoundingClientRect()
+    const rect = rectRef.current || containerRef.current.getBoundingClientRect()
+    rectRef.current = rect
     const x = (e.clientX - rect.left) / rect.width - 0.5
     const y = (e.clientY - rect.top) / rect.height - 0.5
-    setTilt({ x: x * 10, y: -y * 10 })
+    containerRef.current.style.transform = `perspective(1000px) rotateX(${(-y * 10).toFixed(2)}deg) rotateY(${(x * 10).toFixed(2)}deg) translateZ(0)`
   }
 
   const handleMouseLeave = () => {
-    setTilt({ x: 0, y: 0 })
-    setIsHovered(false)
+    rectRef.current = null
+    if (containerRef.current) {
+      containerRef.current.style.transition = 'transform 0.55s var(--ease)'
+      containerRef.current.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0)'
+    }
   }
 
   // Keyboard and manual click navigation
@@ -93,13 +103,11 @@ export default function EditorialPortraitHero({ reduced = false }) {
         ref={containerRef}
         data-cursor="view"
         onMouseMove={handleMouseMove}
-        onMouseEnter={() => setIsHovered(true)}
+        onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         style={{
-          transform: reduced
-            ? 'none'
-            : `perspective(1000px) rotateX(${tilt.y}deg) rotateY(${tilt.x}deg)`,
-          transition: isHovered ? 'transform 0.1s ease-out' : 'transform 0.6s var(--ease)',
+          transform: reduced ? 'none' : 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0)',
+          willChange: reduced ? 'auto' : 'transform',
         }}
         className="relative h-[48vh] sm:h-[56vh] lg:h-[66vh] w-full rounded-3xl overflow-hidden border border-white/[0.12] bg-[#060807] shadow-[0_24px_80px_rgba(0,0,0,0.8)] select-none group"
       >
