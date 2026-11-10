@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import MagneticButton from './MagneticButton'
 import {
   isSoundEnabled,
-  toggleSound,
+  setSoundEnabled,
   playSyntheticSound,
   isMusicPlaying,
   toggleMusic,

@@ -48,13 +48,49 @@ export function toggleSound() {
 // ----------------------------------------------------
 // Soundtrack Audio Player Engine
 // ----------------------------------------------------
+const MUSIC_GAIN_BOOST = 2.6
 let bgMusic = null
 let musicPlaying = false
 let userPaused = false
+let musicBoostConnected = false
 if (typeof window !== 'undefined') {
   userPaused = localStorage.getItem('parshva_music_paused') === 'true'
 }
 const musicListeners = new Set()
+
+function connectBoostGraph(ctx, audio) {
+  if (musicBoostConnected || !ctx || !audio || ctx.state !== 'running') return
+  try {
+    const source = ctx.createMediaElementSource(audio)
+    const gainNode = ctx.createGain()
+    gainNode.gain.value = MUSIC_GAIN_BOOST
+
+    const compressor = ctx.createDynamicsCompressor()
+    compressor.threshold.setValueAtTime(-6, ctx.currentTime)
+    compressor.knee.setValueAtTime(6, ctx.currentTime)
+    compressor.ratio.setValueAtTime(12, ctx.currentTime)
+    compressor.attack.setValueAtTime(0.002, ctx.currentTime)
+    compressor.release.setValueAtTime(0.1, ctx.currentTime)
+
+    source.connect(gainNode)
+    gainNode.connect(compressor)
+    compressor.connect(ctx.destination)
+    musicBoostConnected = true
+  } catch (e) {
+    // Fallback gracefully to native audio.volume = 1.0 if MediaElementSource cannot attach
+  }
+}
+
+function ensureMusicBoost(audio) {
+  if (musicBoostConnected || !audio) return
+  const ctx = getAudioContext()
+  if (!ctx) return
+  if (ctx.state === 'running') {
+    connectBoostGraph(ctx, audio)
+  } else {
+    ctx.resume().then(() => connectBoostGraph(ctx, audio)).catch(() => {})
+  }
+}
 
 function getMusicAudio() {
   if (typeof window === 'undefined') return null
@@ -65,7 +101,7 @@ function getMusicAudio() {
     bgMusic = new Audio(audioUrl)
     bgMusic.loop = true
     bgMusic.preload = 'auto'
-    bgMusic.volume = 0.40
+    bgMusic.volume = 1.0
 
     // Synchronize native audio events with UI state
     bgMusic.addEventListener('play', () => {
@@ -120,7 +156,9 @@ export function playMusic() {
   const audio = getMusicAudio()
   if (!audio) return Promise.resolve(false)
 
-  audio.volume = 0.40
+  audio.muted = false
+  audio.volume = 1.0
+  ensureMusicBoost(audio)
   const playPromise = audio.play()
 
   if (playPromise !== undefined) {
@@ -128,6 +166,7 @@ export function playMusic() {
       .then(() => {
         musicPlaying = true
         soundEnabled = true
+        ensureMusicBoost(audio)
         notifyMusicState()
         return true
       })
@@ -196,6 +235,8 @@ if (typeof window !== 'undefined') {
         }
       }).catch(() => {})
     } else {
+      const audio = getMusicAudio()
+      if (audio) ensureMusicBoost(audio)
       unlockEvents.forEach((ev) => window.removeEventListener(ev, unlockAudio))
     }
   }
