@@ -284,7 +284,7 @@ export default function CaseStudyModal({ project, allProjects, onClose, onSelect
                         Solution
                       </span>
                       <p className="text-xs sm:text-sm text-white/80 font-sans leading-relaxed">
-                        {s.solutions[idx] || 'Custom algorithmic resolution applied.'}
+                        {s.solutions[idx] || 'Resolved cleanly through modular isolation and boundary validation.'}
                       </p>
                     </div>
                   </div>
@@ -292,6 +292,55 @@ export default function CaseStudyModal({ project, allProjects, onClose, onSelect
               </div>
             </section>
           )}
+
+          {/* Hiring & Acquisition Technical Due-Diligence Q&A */}
+          <section className="space-y-6 pt-8 border-t border-white/10">
+            <div>
+              <span className="font-mono text-xs uppercase tracking-widest text-[#c8f53c]">
+                Engineering Due-Diligence · Technical Q&amp;A
+              </span>
+              <p className="text-xs text-white/50 font-sans mt-1">
+                Key architecture, scalability, and team-handoff questions evaluated by engineering leaders.
+              </p>
+            </div>
+            <div className="space-y-4">
+              {(s.technicalQa && s.technicalQa.length > 0
+                ? s.technicalQa
+                : [
+                    {
+                      q: `Why choose ${s.architecture?.pattern || project.stack.slice(0, 2).join(' + ')} for ${project.title} over heavier alternatives?`,
+                      a: `${s.architecture?.description?.split('\n')[0] || project.description} This keeps runtime overhead low, failure modes isolated, and team onboarding straightforward.`,
+                    },
+                    {
+                      q: `How does this codebase demonstrate production readiness for our engineering team?`,
+                      a: `${s.resultsLearnings || project.description} Every core boundary pairs explicit validation with clean separation of concerns between state, transport, and interface layers.`,
+                    },
+                  ]
+              ).map((qa, idx) => (
+                <div
+                  key={idx}
+                  className="p-5 rounded-xl bg-[#070d0a] border border-white/10 hover:border-[#c8f53c]/30 transition-colors space-y-2.5"
+                >
+                  <div className="flex items-start gap-2.5">
+                    <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-[#d8b375]/15 text-[#d8b375] border border-[#d8b375]/30 shrink-0">
+                      Q{idx + 1}
+                    </span>
+                    <p className="text-sm sm:text-base font-medium text-white leading-snug">
+                      {qa.q}
+                    </p>
+                  </div>
+                  <div className="flex items-start gap-2.5 pl-2 sm:pl-4 border-l-2 border-[#c8f53c]/40">
+                    <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-[#c8f53c]/15 text-[#c8f53c] border border-[#c8f53c]/30 shrink-0">
+                      Answer
+                    </span>
+                    <p className="text-xs sm:text-sm text-white/80 font-sans leading-relaxed">
+                      {qa.a}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
 
           {/* 13 & 14. Key Highlights & Learnings */}
           <section className="space-y-6 pt-8 border-t border-white/10">
