@@ -135,7 +135,7 @@ export default function AboutSection() {
             {/* Narrative text */}
             <div className="space-y-5 text-sm sm:text-base text-white/75 font-sans leading-relaxed">
               <p>
-                Currently pursuing my <strong className="text-white">BTech in Artificial Intelligence &amp; Data Science (2026–2030) at KJ Somaiya School of Engineering, Mumbai</strong>. My trajectory began with an insatiable curiosity for how computational systems operate: from data structures and memory allocation to discrete mathematics and neural network optimization.
+                Currently pursuing my <strong className="text-white">BTech in Artificial Intelligence &amp; Data Science (2026–2030) at KJ Somaiya School of Engineering, Mumbai</strong>, exploring software engineering, applied AI tools, and building practical products end-to-end.
               </p>
               <p>
                 Alongside my academic syllabus, I run an <strong className="text-white">independent commercial practice</strong>. I partner directly with local businesses—salons, tuition academies, and textile merchants in Mumbai and Surat. I build production software: multi-tenant WhatsApp FSM bots, admissions portals, and automated scheduling systems.

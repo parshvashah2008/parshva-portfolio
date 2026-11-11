@@ -31,14 +31,15 @@ Institute:  KJ Somaiya School of Engineering, Mumbai
 Practice:   Architecting custom AI automations & full-stack web software
 Mindset:    Building things that make the digital world more interesting`,
 
-  skills: `Technical Capabilities & Toolkit
+  skills: `Tech Stack (What I Build With)
 -----------------------------------------------------------
-AI & ML:        LLMs, Anthropic Claude SDK, Model Context Protocol (MCP),
-                Multi-provider routing, MediaPipe Computer Vision, RAG
-Backend:        Python 3.12, FastAPI, PostgreSQL, SQLAlchemy 2.0, Twilio FSM
-Languages:      Python, C++, TypeScript, JavaScript, SQL
-Frontend:       React 19, Three.js / WebGL, GSAP, Tailwind CSS, Vite
-Systems:        Linux, Docker, Git/GitHub, CI/CD, Discrete Mathematics`,
+AI:          LLM Engineering, Groq / Gemini / Claude, MediaPipe / OpenCV
+Backend:     Python, FastAPI, Node.js
+Languages:   Java, C
+Frontend:    React / Next.js, Three.js / WebGL
+Databases:   Supabase / SQL
+Automation:  WhatsApp / Telegram API, Make.com / Zapier
+Dev Tools:   Git / GitHub`,
 
   projects: `Shipped Software & Production Artifacts
 -----------------------------------------------------------

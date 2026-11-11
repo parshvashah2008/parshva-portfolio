@@ -28,9 +28,7 @@ import ContactSection from './components/ContactSection'       // Page 09: Conta
 gsap.registerPlugin(ScrollTrigger)
 
 const STACK_TICKER = [
-  'FastAPI', 'Claude Agent SDK', 'Model Context Protocol (MCP)', 'Python 3.12',
-  'Three.js / WebGL', 'React 19', 'PostgreSQL', 'Google Gemini 1.5 Pro',
-  'MediaPipe Computer Vision', 'SQLAlchemy 2.0', 'KaTeX', 'Tailwind CSS',
+  'React', 'FastAPI', 'Claude API', 'Three.js', 'Python', 'Postgres', 'Twilio', 'Supabase',
 ]
 
 export default function App() {

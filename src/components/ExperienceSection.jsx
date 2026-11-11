@@ -15,8 +15,8 @@ const TIMELINE_EVENTS = [
     org: 'KJ Somaiya School of Engineering, Mumbai',
     type: 'Academic',
     highlight:
-      'Rigorous coursework in Data Structures & Algorithms, Machine Learning, Operating Systems, Database Management, and Discrete Mathematics.',
-    tags: ['Algorithms', 'Machine Learning', 'Systems Architecture', 'Linear Algebra'],
+      'Pursuing undergraduate coursework in Artificial Intelligence & Data Science while building and shipping practical full-stack web apps and AI automation tools alongside studies.',
+    tags: ['AI & Data Science', 'Python', 'Full-Stack Web', 'Independent Builds'],
   },
   {
     period: '2024 — Present',
