@@ -50,8 +50,8 @@ function getSlotUnitVector(idx, count) {
 function getResponsiveOrbit(canvasWidth, count = 8) {
   const isMobile = canvasWidth < 640
   const isTablet = canvasWidth < 960
-  const densityFactor = count > 8 ? Math.max(0.82, Math.sqrt(8 / count)) : 1
-  const baseScale = isMobile ? 0.58 : isTablet ? 0.74 : 0.84
+  const densityFactor = count > 8 ? Math.max(0.78, Math.sqrt(8 / count)) : 1
+  const baseScale = isMobile ? 0.48 : isTablet ? 0.58 : 0.66
   return {
     sphereRadius: isMobile ? 4.35 : SPHERE_RADIUS,
     innerRadius: isMobile ? 3.00 : INNER_CARD_RADIUS,
@@ -262,13 +262,13 @@ function ProjectSpatialNode({
       0,
       1
     )
-    // When zooming in, scale cards up significantly (up to ~2.2x) so all text and UI are completely visible & readable
-    const zoomScaleMultiplier = 0.80 + Math.pow(zoomProgress, 1.15) * 1.45
+    // Controlled zoom response: compact overview at distance, sleek and readable up close without ballooning
+    const zoomScaleMultiplier = 0.82 + Math.pow(zoomProgress, 1.1) * 0.58
 
-    // Relative depth: cards facing camera get front-proximity boost
+    // Front-proximity depth boost (subtle so front cards stay prominent without dominating)
     const relDepth = dist - centerDist
-    const depthScale = THREE.MathUtils.clamp(1.0 - relDepth * 0.08, 0.72, 1.25)
-    const baseStateScale = isSelected || isHovered ? 1.15 : depthScale
+    const depthScale = THREE.MathUtils.clamp(1.0 - relDepth * 0.05, 0.82, 1.15)
+    const baseStateScale = isSelected || isHovered ? 1.08 : depthScale
     const targetScale = baseStateScale * cardScale * zoomScaleMultiplier
 
     const depthOpacity = THREE.MathUtils.clamp(1.0 - relDepth * 0.09, 0.45, 1.0)
@@ -317,7 +317,7 @@ function ProjectSpatialNode({
               pointerEvents: filterMatch ? 'auto' : 'none',
             }}
           >
-            {/* Full Interactive 3D Card: high contrast, legible typography and smooth GPU transforms */}
+            {/* Full Interactive 3D Card: compact, high-contrast, perfectly proportioned */}
             <div
               ref={cardRef}
               onClick={(e) => {
@@ -334,15 +334,15 @@ function ProjectSpatialNode({
                 isSelected ? 'ring-1 ring-[#c8f53c]' : ''
               }`}
               style={{
-                width: isSelected || isHovered ? '216px' : '196px',
-                transform: `translate3d(0, 0, 0) scale(${((isSelected || isHovered ? 1.15 : 0.95) * cardScale).toFixed(3)})`,
+                width: isSelected || isHovered ? '172px' : '158px',
+                transform: `translate3d(0, 0, 0) scale(${((isSelected || isHovered ? 1.08 : 0.92) * cardScale).toFixed(3)})`,
                 opacity: filterMatch ? (isHovered || isSelected ? 1.0 : 0.95) : 0.15,
                 transformOrigin: 'center center',
                 willChange: 'transform, opacity',
               }}
             >
               <div
-                className="relative p-2.5 rounded-xl border transition-colors duration-200 shadow-2xl overflow-hidden group"
+                className="relative p-2 rounded-xl border transition-colors duration-200 shadow-xl overflow-hidden group"
                 style={{
                   backgroundColor: isSelected
                     ? '#07120a'
@@ -353,12 +353,12 @@ function ProjectSpatialNode({
                     ? project.color
                     : isHovered
                     ? '#c8f53c'
-                    : 'rgba(255, 255, 255, 0.22)',
+                    : 'rgba(255, 255, 255, 0.20)',
                   boxShadow: isSelected
-                    ? `0 0 32px ${project.color}50, 0 16px 36px rgba(0,0,0,0.95)`
+                    ? `0 0 24px ${project.color}45, 0 10px 24px rgba(0,0,0,0.9)`
                     : isHovered
-                    ? `0 0 24px rgba(200,245,60,0.35), 0 14px 30px rgba(0,0,0,0.9)`
-                    : '0 10px 28px rgba(0,0,0,0.85)',
+                    ? `0 0 18px rgba(200,245,60,0.3), 0 8px 20px rgba(0,0,0,0.85)`
+                    : '0 6px 18px rgba(0,0,0,0.75)',
                 }}
               >
                 {/* Holographic dynamic sheen */}
@@ -368,15 +368,15 @@ function ProjectSpatialNode({
                 />
 
                 {/* Sci-fi corner brackets */}
-                <div className="absolute top-1.5 left-1.5 w-1.5 h-1.5 border-t border-l border-white/30 pointer-events-none" />
-                <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 border-t border-r border-white/30 pointer-events-none" />
-                <div className="absolute bottom-1.5 left-1.5 w-1.5 h-1.5 border-b border-l border-white/30 pointer-events-none" />
-                <div className="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 border-b border-r border-white/30 pointer-events-none" />
+                <div className="absolute top-1 left-1 w-1.5 h-1.5 border-t border-l border-white/30 pointer-events-none" />
+                <div className="absolute top-1 right-1 w-1.5 h-1.5 border-t border-r border-white/30 pointer-events-none" />
+                <div className="absolute bottom-1 left-1 w-1.5 h-1.5 border-b border-l border-white/30 pointer-events-none" />
+                <div className="absolute bottom-1 right-1 w-1.5 h-1.5 border-b border-r border-white/30 pointer-events-none" />
 
                 {/* Card Header */}
-                <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                <div className="flex items-center justify-between gap-1 mb-1">
                   <span
-                    className="font-mono text-[9.5px] font-bold tracking-widest px-2 py-0.5 rounded shrink-0 shadow-sm"
+                    className="font-mono text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded shrink-0 shadow-sm"
                     style={{
                       backgroundColor: `${project.color}22`,
                       color: project.color,
@@ -385,50 +385,50 @@ function ProjectSpatialNode({
                   >
                     {project.num}
                   </span>
-                  <span className="font-mono text-[9px] uppercase tracking-wider text-[#c8f53c]/90 font-semibold truncate">
+                  <span className="font-mono text-[8px] uppercase tracking-wider text-[#c8f53c]/90 font-semibold truncate">
                     {project.category}
                   </span>
                 </div>
 
                 {/* Card Visual Preview */}
-                <div className={`w-full ${isSelected ? 'h-16' : 'h-14'} rounded-lg overflow-hidden border border-white/15 mb-2 bg-black/60`}>
+                <div className={`w-full ${isSelected ? 'h-13' : 'h-11'} rounded-lg overflow-hidden border border-white/15 mb-1.5 bg-black/60`}>
                   <ProjectThumbnail project={project} compact={true} />
                 </div>
 
-                {/* Project Title & Subtitle - high contrast and visible */}
-                <h3 className="font-display font-bold text-[13px] text-white line-clamp-1 leading-snug tracking-tight">
+                {/* Project Title & Subtitle - crisp, high-contrast, compact */}
+                <h3 className="font-display font-bold text-[11.5px] text-white line-clamp-1 leading-snug tracking-tight">
                   {project.title}
                 </h3>
-                <p className="text-[10.5px] text-white/85 line-clamp-2 mt-0.5 font-sans leading-relaxed">
+                <p className="text-[9.5px] text-white/85 line-clamp-1 mt-0.5 font-sans">
                   {project.subtitle}
                 </p>
 
-                {/* Stack Chips with clear contrast */}
-                <div className="flex items-center flex-wrap gap-1 mt-2">
-                  {project.stack.slice(0, 3).map((st) => (
+                {/* Single-row compact Stack Chips */}
+                <div className="flex items-center flex-nowrap gap-1 mt-1.5 overflow-hidden">
+                  {project.stack.slice(0, 2).map((st) => (
                     <span
                       key={st}
-                      className="font-mono text-[8px] px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-white font-medium whitespace-nowrap truncate"
+                      className="font-mono text-[7.5px] px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-white font-medium whitespace-nowrap truncate"
                     >
                       {st}
                     </span>
                   ))}
-                  {project.stack.length > 3 && (
-                    <span className="font-mono text-[8px] px-1 py-0.5 text-white/60 font-semibold shrink-0">
-                      +{project.stack.length - 3}
+                  {project.stack.length > 2 && (
+                    <span className="font-mono text-[7.5px] px-1 py-0.5 text-white/60 font-semibold shrink-0">
+                      +{project.stack.length - 2}
                     </span>
                   )}
                 </div>
 
                 {/* Direct Clickable Action Row on Card */}
-                <div className="mt-2.5 pt-2 border-t border-white/15 flex items-center justify-between gap-1 font-mono text-[8.5px]">
+                <div className="mt-2 pt-1.5 border-t border-white/15 flex items-center justify-between gap-1 font-mono text-[7.5px]">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
                       onSelect(project)
                     }}
-                    className="px-2 py-1 rounded font-bold transition-all cursor-pointer shadow hover:scale-105 active:scale-95 whitespace-nowrap shrink-0"
+                    className="px-1.5 py-0.5 rounded font-bold transition-all cursor-pointer shadow hover:scale-105 active:scale-95 whitespace-nowrap shrink-0"
                     style={{
                       backgroundColor: isHovered || isSelected ? project.color : '#c8f53c',
                       color: '#000000',
@@ -444,7 +444,7 @@ function ProjectSpatialNode({
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="px-1.5 py-1 rounded border border-[#c8f53c]/40 bg-[#c8f53c]/15 hover:bg-[#c8f53c]/30 text-[#c8f53c] hover:text-white transition-all cursor-pointer flex items-center gap-0.5 text-[8px] font-bold whitespace-nowrap"
+                        className="px-1.5 py-0.5 rounded border border-[#c8f53c]/40 bg-[#c8f53c]/15 hover:bg-[#c8f53c]/30 text-[#c8f53c] hover:text-white transition-all cursor-pointer flex items-center gap-0.5 text-[7.5px] font-bold whitespace-nowrap"
                         title={`Launch ${project.title}`}
                       >
                         <span>Live</span>
@@ -458,7 +458,7 @@ function ProjectSpatialNode({
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="px-1.5 py-1 rounded border border-white/20 bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer text-[8px] font-medium whitespace-nowrap"
+                        className="px-1.5 py-1 rounded border border-white/20 bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer text-[7.5px] font-medium whitespace-nowrap"
                         title="GitHub Repository"
                       >
                         GH ↗
