@@ -33,10 +33,10 @@ Mindset:    Building things that make the digital world more interesting`,
 
   skills: `Tech Stack (What I Build With)
 -----------------------------------------------------------
-AI:          LLM Engineering, Groq / Gemini / Claude, MediaPipe / OpenCV
+AI:          LLM Engineering, ChatGPT, Groq / Gemini / Claude, MediaPipe / OpenCV
 Backend:     Python, FastAPI, Node.js
-Languages:   Java, C
-Frontend:    React / Next.js, Three.js / WebGL
+Languages:   Java, C, C++
+Frontend:    React / Next.js, Three.js / WebGL, HTML
 Databases:   Supabase / SQL
 Automation:  WhatsApp / Telegram API, Make.com / Zapier
 Dev Tools:   Git / GitHub`,

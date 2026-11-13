@@ -50,8 +50,8 @@ function getSlotUnitVector(idx, count) {
 function getResponsiveOrbit(canvasWidth, count = 8) {
   const isMobile = canvasWidth < 640
   const isTablet = canvasWidth < 960
-  const densityFactor = count > 8 ? Math.max(0.76, Math.sqrt(8 / count)) : 1
-  const baseScale = isMobile ? 0.45 : isTablet ? 0.62 : 0.72
+  const densityFactor = count > 8 ? Math.max(0.82, Math.sqrt(8 / count)) : 1
+  const baseScale = isMobile ? 0.58 : isTablet ? 0.74 : 0.84
   return {
     sphereRadius: isMobile ? 4.35 : SPHERE_RADIUS,
     innerRadius: isMobile ? 3.00 : INNER_CARD_RADIUS,
@@ -144,7 +144,7 @@ function CelestialOrbitRing({ reduced = false, count = 8 }) {
             color="#4a785d"
             wireframe
             transparent
-            opacity={0.20}
+            opacity={0.14}
             depthWrite={false}
             blending={THREE.AdditiveBlending}
           />
@@ -157,7 +157,7 @@ function CelestialOrbitRing({ reduced = false, count = 8 }) {
             color="#c8f53c"
             wireframe
             transparent
-            opacity={0.08}
+            opacity={0.07}
             depthWrite={false}
             blending={THREE.AdditiveBlending}
           />
@@ -165,11 +165,11 @@ function CelestialOrbitRing({ reduced = false, count = 8 }) {
 
         {/* Luminous nucleus core at sphere origin */}
         <mesh>
-          <sphereGeometry args={[0.24, 16, 16]} />
+          <sphereGeometry args={[0.08, 16, 16]} />
           <meshBasicMaterial
             color="#c8f53c"
             transparent
-            opacity={0.35}
+            opacity={0.25}
             blending={THREE.AdditiveBlending}
           />
         </mesh>
@@ -254,15 +254,29 @@ function ProjectSpatialNode({
     const dist = camera.position.distanceTo(nodePos)
     const centerDist = camera.position.length()
 
+    // Dynamic zoom progression (camera distance 4.5 = 100% zoom, 22.0 = 0% zoom)
+    const MIN_ZOOM = 4.5
+    const MAX_ZOOM = 22.0
+    const zoomProgress = THREE.MathUtils.clamp(
+      (MAX_ZOOM - centerDist) / (MAX_ZOOM - MIN_ZOOM),
+      0,
+      1
+    )
+    // When zooming in, scale cards up significantly (up to ~2.2x) so all text and UI are completely visible & readable
+    const zoomScaleMultiplier = 0.80 + Math.pow(zoomProgress, 1.15) * 1.45
+
+    // Relative depth: cards facing camera get front-proximity boost
     const relDepth = dist - centerDist
-    const depthScale = THREE.MathUtils.clamp(0.86 - relDepth * 0.06, 0.54, 1.04)
-    const targetScale = (isSelected || isHovered ? 1.05 : depthScale) * cardScale
-    const depthOpacity = THREE.MathUtils.clamp(0.92 - relDepth * 0.085, 0.44, 1.0)
-    const targetOpacity = filterMatch ? (isHovered || isSelected ? 1 : depthOpacity) : 0.18
-    const targetZ = isHovered || isSelected ? 250 : Math.round(240 - dist * 7)
+    const depthScale = THREE.MathUtils.clamp(1.0 - relDepth * 0.08, 0.72, 1.25)
+    const baseStateScale = isSelected || isHovered ? 1.15 : depthScale
+    const targetScale = baseStateScale * cardScale * zoomScaleMultiplier
+
+    const depthOpacity = THREE.MathUtils.clamp(1.0 - relDepth * 0.09, 0.45, 1.0)
+    const targetOpacity = filterMatch ? (isHovered || isSelected ? 1.0 : depthOpacity) : 0.15
+    const targetZ = isHovered || isSelected ? 500 : Math.round(320 - dist * 10)
 
     const prev = lastVisualRef.current
-    if (Math.abs(targetScale - prev.scale) > 0.006) {
+    if (Math.abs(targetScale - prev.scale) > 0.005) {
       prev.scale = targetScale
       cardRef.current.style.transform = `translate3d(0, 0, 0) scale(${targetScale.toFixed(3)})`
     }
@@ -303,7 +317,7 @@ function ProjectSpatialNode({
               pointerEvents: filterMatch ? 'auto' : 'none',
             }}
           >
-            {/* Full Interactive 3D Card: direct GPU transform/opacity updates with zero backdrop-blur stalls */}
+            {/* Full Interactive 3D Card: high contrast, legible typography and smooth GPU transforms */}
             <div
               ref={cardRef}
               onClick={(e) => {
@@ -316,120 +330,121 @@ function ProjectSpatialNode({
                 onHover(project)
               }}
               onMouseLeave={() => onHover(null)}
-              className={`cursor-pointer select-none ${
-                isSelected ? 'ring-1 ring-[#c8f53c]/60' : ''
+              className={`cursor-pointer select-none transition-shadow duration-200 ${
+                isSelected ? 'ring-1 ring-[#c8f53c]' : ''
               }`}
               style={{
-                width: isSelected || isHovered ? '176px' : '150px',
-                transform: `translate3d(0, 0, 0) scale(${((isSelected || isHovered ? 1.05 : 0.86) * cardScale).toFixed(3)})`,
-                opacity: filterMatch ? (isHovered || isSelected ? 1 : 0.92) : 0.18,
+                width: isSelected || isHovered ? '216px' : '196px',
+                transform: `translate3d(0, 0, 0) scale(${((isSelected || isHovered ? 1.15 : 0.95) * cardScale).toFixed(3)})`,
+                opacity: filterMatch ? (isHovered || isSelected ? 1.0 : 0.95) : 0.15,
                 transformOrigin: 'center center',
                 willChange: 'transform, opacity',
               }}
             >
               <div
-                className="relative p-2 rounded-xl border transition-colors duration-200 shadow-2xl overflow-hidden group"
+                className="relative p-2.5 rounded-xl border transition-colors duration-200 shadow-2xl overflow-hidden group"
                 style={{
                   backgroundColor: isSelected
-                    ? '#0d1712'
+                    ? '#07120a'
                     : isHovered
-                    ? '#0b130f'
-                    : '#080d0a',
+                    ? '#09150d'
+                    : '#050a07',
                   borderColor: isSelected
                     ? project.color
                     : isHovered
-                    ? 'rgba(255, 255, 255, 0.32)'
-                    : 'rgba(255, 255, 255, 0.12)',
+                    ? '#c8f53c'
+                    : 'rgba(255, 255, 255, 0.22)',
                   boxShadow: isSelected
-                    ? `0 0 38px ${project.color}45, 0 20px 40px rgba(0,0,0,0.85)`
+                    ? `0 0 32px ${project.color}50, 0 16px 36px rgba(0,0,0,0.95)`
                     : isHovered
-                    ? `0 0 26px ${project.color}30, 0 16px 30px rgba(0,0,0,0.75)`
-                    : '0 10px 25px rgba(0,0,0,0.65)',
+                    ? `0 0 24px rgba(200,245,60,0.35), 0 14px 30px rgba(0,0,0,0.9)`
+                    : '0 10px 28px rgba(0,0,0,0.85)',
                 }}
               >
                 {/* Holographic dynamic sheen */}
                 <div
-                  className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.05] to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                   style={{ mixBlendMode: 'overlay' }}
                 />
 
                 {/* Sci-fi corner brackets */}
-                <div className="absolute top-1.5 left-1.5 w-1.5 h-1.5 border-t border-l border-white/20 pointer-events-none" />
-                <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 border-t border-r border-white/20 pointer-events-none" />
-                <div className="absolute bottom-1.5 left-1.5 w-1.5 h-1.5 border-b border-l border-white/20 pointer-events-none" />
-                <div className="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 border-b border-r border-white/20 pointer-events-none" />
+                <div className="absolute top-1.5 left-1.5 w-1.5 h-1.5 border-t border-l border-white/30 pointer-events-none" />
+                <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 border-t border-r border-white/30 pointer-events-none" />
+                <div className="absolute bottom-1.5 left-1.5 w-1.5 h-1.5 border-b border-l border-white/30 pointer-events-none" />
+                <div className="absolute bottom-1.5 right-1.5 w-1.5 h-1.5 border-b border-r border-white/30 pointer-events-none" />
 
                 {/* Card Header */}
-                <div className="flex items-center justify-between gap-1 mb-1">
+                <div className="flex items-center justify-between gap-1.5 mb-1.5">
                   <span
-                    className="font-mono text-[9px] font-bold tracking-widest px-1.5 py-0.5 rounded shrink-0"
+                    className="font-mono text-[9.5px] font-bold tracking-widest px-2 py-0.5 rounded shrink-0 shadow-sm"
                     style={{
-                      backgroundColor: `${project.color}18`,
+                      backgroundColor: `${project.color}22`,
                       color: project.color,
+                      border: `1px solid ${project.color}44`,
                     }}
                   >
                     {project.num}
                   </span>
-                  <span className="font-mono text-[8px] uppercase tracking-wider text-white/50 truncate">
+                  <span className="font-mono text-[9px] uppercase tracking-wider text-[#c8f53c]/90 font-semibold truncate">
                     {project.category}
                   </span>
                 </div>
 
                 {/* Card Visual Preview */}
-                <div className={`w-full ${isSelected ? 'h-14' : 'h-12'} rounded-lg overflow-hidden border border-white/10 mb-1.5`}>
+                <div className={`w-full ${isSelected ? 'h-16' : 'h-14'} rounded-lg overflow-hidden border border-white/15 mb-2 bg-black/60`}>
                   <ProjectThumbnail project={project} compact={true} />
                 </div>
 
-                {/* Project Title & Short Subtitle */}
-                <h3 className="font-display font-semibold text-[11.5px] text-white line-clamp-1 leading-snug">
+                {/* Project Title & Subtitle - high contrast and visible */}
+                <h3 className="font-display font-bold text-[13px] text-white line-clamp-1 leading-snug tracking-tight">
                   {project.title}
                 </h3>
-                <p className="text-[9px] text-white/60 line-clamp-1 mt-0.5 font-sans">
+                <p className="text-[10.5px] text-white/85 line-clamp-2 mt-0.5 font-sans leading-relaxed">
                   {project.subtitle}
                 </p>
 
-                {/* Single-row compact Stack Chips */}
-                <div className="flex items-center flex-nowrap gap-1 mt-1.5 overflow-hidden">
-                  {project.stack.slice(0, 2).map((st) => (
+                {/* Stack Chips with clear contrast */}
+                <div className="flex items-center flex-wrap gap-1 mt-2">
+                  {project.stack.slice(0, 3).map((st) => (
                     <span
                       key={st}
-                      className="font-mono text-[7px] px-1.5 py-0.5 rounded bg-white/5 border border-white/5 text-white/70 whitespace-nowrap truncate"
+                      className="font-mono text-[8px] px-1.5 py-0.5 rounded bg-white/10 border border-white/10 text-white font-medium whitespace-nowrap truncate"
                     >
                       {st}
                     </span>
                   ))}
-                  {project.stack.length > 2 && (
-                    <span className="font-mono text-[7px] px-1 py-0.5 text-white/40 shrink-0">
-                      +{project.stack.length - 2}
+                  {project.stack.length > 3 && (
+                    <span className="font-mono text-[8px] px-1 py-0.5 text-white/60 font-semibold shrink-0">
+                      +{project.stack.length - 3}
                     </span>
                   )}
                 </div>
 
                 {/* Direct Clickable Action Row on Card */}
-                <div className="mt-1.5 pt-1.5 border-t border-white/10 flex items-center justify-between gap-1 font-mono text-[7.5px]">
+                <div className="mt-2.5 pt-2 border-t border-white/15 flex items-center justify-between gap-1 font-mono text-[8.5px]">
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
                       onSelect(project)
                     }}
-                    className="px-1.5 py-0.5 rounded font-semibold transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95 whitespace-nowrap shrink-0"
+                    className="px-2 py-1 rounded font-bold transition-all cursor-pointer shadow hover:scale-105 active:scale-95 whitespace-nowrap shrink-0"
                     style={{
-                      backgroundColor: isHovered || isSelected ? project.color : 'rgba(255,255,255,0.12)',
-                      color: isHovered || isSelected ? '#000' : '#fff',
+                      backgroundColor: isHovered || isSelected ? project.color : '#c8f53c',
+                      color: '#000000',
                     }}
                   >
                     Case Study →
                   </button>
 
-                  <div className="flex items-center gap-0.5 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0">
                     {project.link && project.link.startsWith('http') && (
                       <a
                         href={project.link}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="px-1 py-0.5 rounded border border-white/20 bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer flex items-center gap-0.5 text-[7px] font-semibold whitespace-nowrap"
+                        className="px-1.5 py-1 rounded border border-[#c8f53c]/40 bg-[#c8f53c]/15 hover:bg-[#c8f53c]/30 text-[#c8f53c] hover:text-white transition-all cursor-pointer flex items-center gap-0.5 text-[8px] font-bold whitespace-nowrap"
                         title={`Launch ${project.title}`}
                       >
                         <span>Live</span>
@@ -443,7 +458,7 @@ function ProjectSpatialNode({
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="px-1 py-0.5 rounded border border-white/15 bg-white/5 hover:bg-white/15 text-white/70 hover:text-white transition-all cursor-pointer text-[7px] whitespace-nowrap"
+                        className="px-1.5 py-1 rounded border border-white/20 bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer text-[8px] font-medium whitespace-nowrap"
                         title="GitHub Repository"
                       >
                         GH ↗

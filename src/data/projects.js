@@ -22,7 +22,7 @@ export const projects = caseStudies.map((cs) => ({
 export const skillCategories = [
   {
     label: 'AI',
-    items: ['LLM Engineering', 'Groq / Gemini / Claude', 'MediaPipe / OpenCV'],
+    items: ['LLM Engineering', 'ChatGPT', 'Groq / Gemini / Claude', 'MediaPipe / OpenCV'],
   },
   {
     label: 'Backend',
@@ -30,11 +30,11 @@ export const skillCategories = [
   },
   {
     label: 'Languages',
-    items: ['Java', 'C'],
+    items: ['Java', 'C', 'C++'],
   },
   {
     label: 'Frontend',
-    items: ['React / Next.js', 'Three.js / WebGL'],
+    items: ['React / Next.js', 'Three.js / WebGL', 'HTML'],
   },
   {
     label: 'Databases',
