@@ -258,6 +258,8 @@ export default function ProjectUniverse({ reduced = false, lowPower = false }) {
                     onTouchStart={(e) => e.stopPropagation()}
                   >
                     <input
+                      id="orbit-camera-zoom"
+                      name="orbit-camera-zoom"
                       type="range"
                       min="0"
                       max="100"
