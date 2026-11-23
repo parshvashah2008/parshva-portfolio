@@ -204,6 +204,9 @@ export default function ParshvaCLI() {
         <div className="flex items-center gap-2 text-white pt-1">
           <span className="text-[#c8f53c] font-bold shrink-0">parshva@arch:~$</span>
           <input
+            id="cli-terminal-input"
+            name="cli-command"
+            aria-label="Interactive Terminal Command Input"
             ref={inputRef}
             type="text"
             value={inputVal}
