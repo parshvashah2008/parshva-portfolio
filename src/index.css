@@ -290,25 +290,10 @@ html {
   }
 }
 
-/* Prevent image, canvas, and media dragging / touch callouts */
+/* Prevent accidental image, canvas, and media dragging */
 img, canvas, video, svg {
   -webkit-user-drag: none;
   user-drag: none;
-  -webkit-touch-callout: none;
 }
 
-/* Disable general text scraping while allowing interactive inputs and terminal */
-body {
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
-
-input, textarea, [contenteditable="true"], .allow-select {
-  -webkit-user-select: text !important;
-  -moz-user-select: text !important;
-  -ms-user-select: text !important;
-  user-select: text !important;
-}
 
