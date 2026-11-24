@@ -20,6 +20,7 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
     Permissions-Policy = "geolocation=(), microphone=()"
+    X-Robots-Tag = "noarchive, noimageindex, nosnippet"
 
 [[headers]]
   for = "/assets/*"
