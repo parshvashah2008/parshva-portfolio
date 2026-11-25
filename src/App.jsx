@@ -4,7 +4,6 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useReducedMotion, useIsLowPower } from './hooks/useReducedMotion'
 import { useLenis } from './hooks/useLenis'
 import { useDepth3D } from './hooks/useDepth3D'
-import { useContentProtection } from './hooks/useContentProtection'
 import { playMusic } from './utils/soundFX'
 
 // Supporting UI & Spatial Infrastructure
@@ -39,7 +38,6 @@ export default function App() {
 
   useLenis(reduced)
   useDepth3D(reduced, !loading)
-  useContentProtection()
 
   useEffect(() => {
     // Prevent browser auto-restoring scroll to middle of page
